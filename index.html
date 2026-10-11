@@ -1,0 +1,4441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PostBench: social post simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ==========================================================
+       TOKENS
+       Concept: a proofing bench. The post is the specimen,
+       the stage is the bench, the vermilion offset frame is
+       the proofreader's mark. Tool chrome stays quiet.
+       ========================================================== */
+    :root {
+      --bg: #E4E8EE;
+      --panel: #F5F7FA;
+      --panel-2: #FFFFFF;
+      --ink: #11141B;
+      --ink-2: #596273;
+      --line: #CFD5DF;
+      --accent: #FF5A2C;
+      --accent-ink: #FFFFFF;
+      --dot: rgba(17, 20, 27, 0.16);
+      --grain-opacity: 0.06;
+
+      --r-s: 10px;
+      --r-m: 20px;
+      --r-l: 32px;
+
+      --sp-1: 4px;
+      --sp-2: 8px;
+      --sp-3: 12px;
+      --sp-4: 16px;
+      --sp-5: 24px;
+      --sp-6: 32px;
+
+      --shadow-panel: 0 1px 2px rgba(17, 20, 27, 0.06), 0 8px 24px rgba(17, 20, 27, 0.08);
+      --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+      --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+    }
+
+    :root:not([data-theme="light"]) {
+      color-scheme: light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --bg: #0E1116;
+        --panel: #171B23;
+        --panel-2: #1F242E;
+        --ink: #EEF1F6;
+        --ink-2: #9AA3B2;
+        --line: #2B323F;
+        --accent: #FF6B3F;
+        --dot: rgba(238, 241, 246, 0.14);
+        --grain-opacity: 0.09;
+        --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0E1116;
+      --panel: #171B23;
+      --panel-2: #1F242E;
+      --ink: #EEF1F6;
+      --ink-2: #9AA3B2;
+      --line: #2B323F;
+      --accent: #FF6B3F;
+      --dot: rgba(238, 241, 246, 0.14);
+      --grain-opacity: 0.09;
+      --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    /* ==========================================================
+       BASE
+       ========================================================== */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.5;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+      color: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .app {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: var(--sp-4) var(--sp-5) var(--sp-6);
+    }
+
+    /* ==========================================================
+       TOP BAR
+       ========================================================== */
+    .top {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-5);
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-3);
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .mark {
+      position: relative;
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      background: var(--ink);
+      flex: none;
+    }
+
+    .mark::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      transform: translate(4px, 4px);
+      border: 2px solid var(--accent);
+      border-radius: 7px;
+      z-index: -1;
+    }
+
+    .brand-name {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-by {
+      color: var(--ink-2);
+      font-size: 14px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: var(--sp-2);
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    .tab {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: var(--r-s);
+      padding: 8px 14px;
+      font-weight: 500;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .tab[aria-current="true"] {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--bg);
+    }
+
+    .tab:disabled {
+      cursor: not-allowed;
+      border-style: dashed;
+      background: transparent;
+      color: var(--ink-2);
+    }
+
+    .tab small {
+      margin-left: 6px;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: var(--r-s);
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .intro {
+      padding: var(--sp-6) 0 var(--sp-5);
+    }
+
+    .intro h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(30px, 4.4vw, 52px);
+      line-height: 1;
+      letter-spacing: -0.035em;
+    }
+
+    .intro p {
+      margin: var(--sp-3) 0 0;
+      color: var(--ink-2);
+      max-width: 52ch;
+    }
+
+    /* ==========================================================
+       WORK AREA
+       ========================================================== */
+    .work {
+      display: grid;
+      grid-template-columns: 380px minmax(0, 1fr);
+      gap: var(--sp-6);
+      align-items: start;
+    }
+
+    .panel {
+      position: sticky;
+      top: var(--sp-4);
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--r-m);
+      box-shadow: var(--shadow-panel);
+    }
+
+    .panel-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-4) var(--sp-5);
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .link-btn {
+      border: 0;
+      background: none;
+      padding: 4px 0;
+      color: var(--ink-2);
+      font-size: 14px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .link-btn:hover {
+      color: var(--ink);
+    }
+
+    .sec {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .sec:last-child {
+      border-bottom: 0;
+    }
+
+    .sec summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-4) var(--sp-5);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .sec summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .sec summary::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid var(--ink-2);
+      border-bottom: 2px solid var(--ink-2);
+      transform: rotate(45deg);
+      transition: transform 0.15s ease;
+      margin-right: 4px;
+    }
+
+    .sec[open] summary::after {
+      transform: rotate(-135deg);
+    }
+
+    .sec-body {
+      display: grid;
+      gap: var(--sp-4);
+      padding: 0 var(--sp-5) var(--sp-5);
+    }
+
+    .field[hidden] {
+      display: none;
+    }
+
+    .field > .lbl,
+    .field > label.lbl {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-2);
+      margin-bottom: 6px;
+    }
+
+    .field input[type="text"],
+    .field input[type="number"],
+    .field textarea {
+      width: 100%;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: var(--r-s);
+      padding: 10px 12px;
+      line-height: 1.4;
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 96px;
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 0;
+      border-color: transparent;
+    }
+
+    .seg {
+      display: flex;
+      border: 1px solid var(--line);
+      border-radius: var(--r-s);
+      background: var(--panel-2);
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .seg button {
+      flex: 1;
+      border: 0;
+      background: transparent;
+      border-radius: 7px;
+      padding: 7px 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-2);
+      white-space: nowrap;
+    }
+
+    .seg button[aria-pressed="true"] {
+      background: var(--ink);
+      color: var(--bg);
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-3);
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .switch-row input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switch {
+      position: relative;
+      width: 38px;
+      height: 22px;
+      flex: none;
+      border-radius: 11px;
+      background: var(--line);
+      transition: background 0.15s ease;
+    }
+
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      transition: transform 0.15s ease;
+    }
+
+    .switch-row input:checked + .switch {
+      background: var(--accent);
+    }
+
+    .switch-row input:checked + .switch::after {
+      transform: translateX(16px);
+    }
+
+    .switch-row input:focus-visible + .switch {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: var(--sp-2);
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: var(--r-s);
+      padding: 8px 14px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .btn:hover {
+      border-color: var(--ink-2);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 600;
+    }
+
+    .btn--primary:hover {
+      filter: brightness(1.06);
+      border-color: var(--accent);
+    }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: progress;
+    }
+
+    .img-field {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+    }
+
+    .img-thumb {
+      width: 52px;
+      height: 52px;
+      flex: none;
+      border-radius: var(--r-s);
+      border: 1px solid var(--line);
+      background: var(--panel-2) center / cover no-repeat;
+    }
+
+    .rx-picker {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--sp-2);
+    }
+
+    .rx-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: var(--r-s);
+      padding: 6px 8px;
+      font-size: 13px;
+      color: var(--ink-2);
+    }
+
+    .rx-chip svg {
+      width: 20px;
+      height: 20px;
+      flex: none;
+      opacity: 0.45;
+      filter: grayscale(1);
+    }
+
+    .rx-chip[aria-pressed="true"] {
+      border-color: var(--ink);
+      color: var(--ink);
+    }
+
+    .rx-chip[aria-pressed="true"] svg {
+      opacity: 1;
+      filter: none;
+    }
+
+    .swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-2);
+    }
+
+    .sw {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--r-s);
+      border: 1px solid var(--line);
+      padding: 0;
+      background-size: cover;
+    }
+
+    .sw[aria-pressed="true"] {
+      outline: 2px solid var(--ink);
+      outline-offset: 2px;
+    }
+
+    .sw--none {
+      background:
+        linear-gradient(45deg, #b9c0cc 25%, transparent 25%, transparent 75%, #b9c0cc 75%),
+        linear-gradient(45deg, #b9c0cc 25%, #fff 25%, #fff 75%, #b9c0cc 75%);
+      background-size: 10px 10px;
+      background-position: 0 0, 5px 5px;
+    }
+
+    .sw--custom {
+      position: relative;
+      overflow: hidden;
+      background: conic-gradient(#f43, #fc3, #3c9, #39f, #93f, #f43);
+    }
+
+    .sw--custom input {
+      position: absolute;
+      inset: -6px;
+      width: 60px;
+      height: 60px;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    /* ==========================================================
+       STAGE
+       Signature: offset outline frame behind the bench, with
+       two chips breaking across its edges.
+       ========================================================== */
+    .stage-col {
+      min-width: 0;
+    }
+
+    .bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--sp-2);
+      margin-bottom: var(--sp-5);
+      flex-wrap: wrap;
+    }
+
+    .stage-wrap {
+      position: relative;
+      margin: 0 12px 12px 0;
+    }
+
+    .stage-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      transform: translate(12px, 12px);
+      border: 2px solid var(--accent);
+      border-radius: var(--r-l);
+    }
+
+    .stage {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      min-height: 560px;
+      padding: var(--sp-6);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--r-l);
+      background-color: var(--panel);
+      background-image: radial-gradient(var(--dot) 1px, transparent 1.4px);
+      background-size: 18px 18px;
+    }
+
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: var(--grain-opacity);
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    }
+
+    .chip {
+      position: absolute;
+      z-index: 3;
+      background: var(--ink);
+      color: var(--bg);
+      border-radius: var(--r-s);
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .chip--top {
+      top: -14px;
+      left: 24px;
+    }
+
+    .chip--bottom {
+      bottom: -14px;
+      right: 24px;
+    }
+
+    #fit {
+      position: relative;
+      z-index: 1;
+      flex: none;
+      align-self: flex-start;
+    }
+
+    #scaler {
+      width: max-content;
+      transform-origin: 0 0;
+    }
+
+    #frame {
+      width: max-content;
+      display: block;
+    }
+
+    #card {
+      width: max-content;
+    }
+
+    #card.settle {
+      animation: settle 0.38s cubic-bezier(0.2, 0.7, 0.1, 1) both;
+    }
+
+    @keyframes settle {
+      from {
+        opacity: 0;
+        transform: translateY(-14px) scale(1.012);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      transform: translate(-50%, 16px);
+      background: var(--ink);
+      color: var(--bg);
+      padding: 10px 16px;
+      border-radius: var(--r-s);
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      z-index: 20;
+    }
+
+    .toast.on {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    /* ==========================================================
+       LINKEDIN POST (platform-accurate: system fonts, LinkedIn tokens)
+       ========================================================== */
+    .lk {
+      --lk-bg: #ffffff;
+      --lk-text: rgba(0, 0, 0, 0.9);
+      --lk-sub: rgba(0, 0, 0, 0.6);
+      --lk-line: #e0dfdc;
+      --lk-blue: #0a66c2;
+      --lk-ring: rgba(0, 0, 0, 0.08);
+
+      width: var(--card-w);
+      background: var(--lk-bg);
+      color: var(--lk-text);
+      border-radius: var(--lk-r, 8px);
+      overflow: hidden;
+      text-align: left;
+      font: 400 14px/20px -apple-system, system-ui, "Segoe UI", Roboto, "Helvetica Neue", "Fira Sans", Ubuntu, Oxygen, "Oxygen Sans", Cantarell, "Droid Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Lucida Grande", Helvetica, Arial, sans-serif;
+      box-shadow: 0 0 0 1px var(--lk-ring), 0 2px 4px rgba(10, 14, 25, 0.08), 0 14px 36px rgba(10, 14, 25, 0.16);
+    }
+
+    .lk--dark {
+      --lk-bg: #1b1f23;
+      --lk-text: rgba(255, 255, 255, 0.9);
+      --lk-sub: rgba(255, 255, 255, 0.6);
+      --lk-line: #38434f;
+      --lk-blue: #71b7fb;
+      --lk-ring: rgba(255, 255, 255, 0.08);
+    }
+
+    .lk *,
+    .lk *::before,
+    .lk *::after {
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    .lk svg {
+      display: block;
+    }
+
+    .lk-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 12px 16px 0;
+    }
+
+    .lk-av {
+      width: 48px;
+      height: 48px;
+      flex: none;
+      display: block;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .lk-av--co {
+      border-radius: 4px;
+    }
+
+    .lk-who {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .lk-name-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .lk-name {
+      font-weight: 600;
+    }
+
+    .lk-ver {
+      width: 16px;
+      height: 16px;
+      color: var(--lk-sub);
+    }
+
+    .lk-deg {
+      color: var(--lk-sub);
+    }
+
+    .lk-sub {
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--lk-sub);
+    }
+
+    .lk-meta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--lk-sub);
+    }
+
+    .lk-meta svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .lk-top {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: none;
+    }
+
+    .lk-follow {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+      color: var(--lk-blue);
+      padding: 0 4px;
+    }
+
+    .lk-follow--on {
+      color: var(--lk-sub);
+    }
+
+    .lk-follow svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .lk-dots {
+      width: 24px;
+      height: 24px;
+      color: var(--lk-sub);
+    }
+
+    .lk-body {
+      padding: 8px 16px 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .lk-link {
+      color: var(--lk-blue);
+      font-weight: 600;
+    }
+
+    .lk-more {
+      color: var(--lk-sub);
+    }
+
+    .lk-img {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin-top: 8px;
+    }
+
+    .lk-counts {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 16px;
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--lk-sub);
+    }
+
+    .lk-counts-l {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .lk-rxs {
+      display: inline-flex;
+    }
+
+    .lk-rx {
+      width: 16px;
+      height: 16px;
+      margin-left: -4px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 1.5px var(--lk-bg);
+    }
+
+    .lk-rx:first-child {
+      margin-left: 0;
+    }
+
+    .lk-rx svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .lk-actions {
+      display: flex;
+      margin: 0 16px;
+      padding: 4px 0;
+      border-top: 1px solid var(--lk-line);
+    }
+
+    .lk-act {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 48px;
+      font-weight: 600;
+      color: var(--lk-sub);
+    }
+
+    .lk-act svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .lk-act--on {
+      color: var(--lk-blue);
+    }
+
+    /* ==========================================================
+       RESPONSIVE
+       ========================================================== */
+/* ==========================================================
+       X POST (platform-accurate: X tokens, three themes)
+       ========================================================== */
+    .x {
+      --x-bg: #ffffff;
+      --x-text: #0f1419;
+      --x-sub: #536471;
+      --x-line: #eff3f4;
+      --x-rail: #cfd9de;
+      --x-blue: #1d9bf0;
+      --x-ring: rgba(0, 0, 0, 0.08);
+
+      width: var(--card-w);
+      background: var(--x-bg);
+      color: var(--x-text);
+      border-radius: var(--x-r, 16px);
+      overflow: hidden;
+      text-align: left;
+      font: 400 15px/20px TwitterChromeFont, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      box-shadow: 0 0 0 1px var(--x-ring), 0 2px 4px rgba(10, 14, 25, 0.08), 0 14px 36px rgba(10, 14, 25, 0.16);
+    }
+
+    .x--dim {
+      --x-bg: #15202b;
+      --x-text: #f7f9f9;
+      --x-sub: #8b98a5;
+      --x-line: #38444d;
+      --x-rail: #38444d;
+      --x-ring: rgba(255, 255, 255, 0.08);
+    }
+
+    .x--dark {
+      --x-bg: #000000;
+      --x-text: #e7e9ea;
+      --x-sub: #71767b;
+      --x-line: #2f3336;
+      --x-rail: #333639;
+      --x-ring: rgba(255, 255, 255, 0.12);
+    }
+
+    .x *,
+    .x *::before,
+    .x *::after {
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    .x svg {
+      display: block;
+      fill: currentColor;
+    }
+
+    .x-post {
+      display: flex;
+      gap: 12px;
+      padding: 12px 16px 0;
+    }
+
+    .x-post--cont {
+      padding-top: 0;
+    }
+
+    .x-rail {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: none;
+      width: 40px;
+    }
+
+    .x-av {
+      width: 40px;
+      height: 40px;
+      flex: none;
+      display: block;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .x-line {
+      flex: 1;
+      width: 2px;
+      margin-top: 4px;
+      background: var(--x-rail);
+    }
+
+    .x-main {
+      flex: 1;
+      min-width: 0;
+      padding-bottom: 12px;
+    }
+
+    .x-head {
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .x-id {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0 4px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .x-name {
+      font-weight: 700;
+    }
+
+    .x-badge {
+      display: inline-flex;
+      margin-left: -2px;
+    }
+
+    .x-badge svg {
+      width: 18.75px;
+      height: 18.75px;
+    }
+
+    .x-sub {
+      color: var(--x-sub);
+    }
+
+    .x-dots {
+      width: 18.75px;
+      height: 18.75px;
+      flex: none;
+      color: var(--x-sub);
+      margin-top: 1px;
+    }
+
+    .x-text {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .x-text--big {
+      font-size: 17px;
+      line-height: 24px;
+    }
+
+    .x-link {
+      color: var(--x-blue);
+    }
+
+    .x-img {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin-top: 12px;
+      border-radius: 16px;
+      border: 1px solid var(--x-line);
+    }
+
+    .x-acts {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 425px;
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 16px;
+      color: var(--x-sub);
+    }
+
+    .x-acts-r {
+      display: inline-flex;
+      gap: 12px;
+    }
+
+    .x-act {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .x-act svg {
+      width: 18.75px;
+      height: 18.75px;
+    }
+
+    .x-act--like {
+      color: #f91880;
+    }
+
+    .x-act--rt {
+      color: #00ba7c;
+    }
+
+    .x-act--bm {
+      color: var(--x-blue);
+    }
+
+/* X multi-post editor and media grid */
+    .posts {
+      display: grid;
+      gap: var(--sp-3);
+    }
+
+    .post-item {
+      border: 1px solid var(--line);
+      border-radius: var(--r-s);
+      background: var(--panel-2);
+    }
+
+    .post-item > summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .post-item > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .post-item-body {
+      display: grid;
+      gap: var(--sp-3);
+      padding: 0 12px 12px;
+    }
+
+    .post-item textarea {
+      min-height: 72px;
+      background: var(--panel);
+    }
+
+    .post-item input[type="number"] {
+      background: var(--panel);
+    }
+
+    .post-rm {
+      border: 0;
+      background: none;
+      padding: 2px 4px;
+      font-size: 13px;
+      color: var(--ink-2);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .thumbs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-2);
+    }
+
+    .thumb {
+      position: relative;
+      width: 56px;
+      height: 56px;
+      border-radius: var(--r-s);
+      border: 1px solid var(--line);
+      background: var(--panel) center / cover no-repeat;
+    }
+
+    .thumb button {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: var(--ink);
+      color: var(--bg);
+      font-size: 13px;
+      line-height: 20px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-2);
+    }
+
+    .stat-grid label {
+      display: grid;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--ink-2);
+    }
+
+    .x-media {
+      display: grid;
+      gap: 2px;
+      margin-top: 12px;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid var(--x-line);
+    }
+
+    .x-media img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      object-fit: cover;
+    }
+
+    .x-media--1 {
+      display: block;
+      aspect-ratio: auto;
+    }
+
+    .x-media--1 img {
+      height: auto;
+    }
+
+    .x-media--2 {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .x-media--3,
+    .x-media--4 {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+    }
+
+    .x-media--3 img:first-child {
+      grid-row: span 2;
+    }
+
+    .x-detail {
+      padding: 12px 16px 0;
+    }
+
+    .x-dhead {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .x-dwho {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .x-dname {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .x-dmeta {
+      margin-top: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--x-line);
+      color: var(--x-sub);
+    }
+
+    .x-dmeta b,
+    .x-dstats b {
+      color: var(--x-text);
+      font-weight: 700;
+    }
+
+    .x-dstats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 20px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--x-line);
+      color: var(--x-sub);
+    }
+
+    .x-dacts {
+      display: flex;
+      justify-content: space-around;
+      padding: 4px 0;
+      color: var(--x-sub);
+    }
+
+    .x-dacts .x-act {
+      height: 48px;
+    }
+
+    .x-dacts .x-act svg {
+      width: 22.5px;
+      height: 22.5px;
+    }
+
+    /* ==========================================================
+       INSTAGRAM POST (platform-accurate: Instagram tokens, light and dark)
+       ========================================================== */
+    .ig {
+      --ig-bg: #ffffff;
+      --ig-text: #000000;
+      --ig-sub: #737373;
+      --ig-line: #dbdbdb;
+      --ig-link: #00376b;
+      --ig-blue: #0095f6;
+      --ig-ring: rgba(0, 0, 0, 0.08);
+
+      width: var(--card-w);
+      background: var(--ig-bg);
+      color: var(--ig-text);
+      border-radius: var(--ig-r, 8px);
+      overflow: hidden;
+      text-align: left;
+      font: 400 14px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      box-shadow: 0 0 0 1px var(--ig-ring), 0 2px 4px rgba(10, 14, 25, 0.08), 0 14px 36px rgba(10, 14, 25, 0.16);
+    }
+
+    .ig--dark {
+      --ig-bg: #000000;
+      --ig-text: #f5f5f5;
+      --ig-sub: #a8a8a8;
+      --ig-line: #262626;
+      --ig-link: #e0f1ff;
+      --ig-ring: rgba(255, 255, 255, 0.12);
+    }
+
+    .ig *,
+    .ig *::before,
+    .ig *::after {
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    .ig svg {
+      display: block;
+    }
+
+    .ig b {
+      font-weight: 600;
+    }
+
+    .ig-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+    }
+
+    .ig-av {
+      width: 32px;
+      height: 32px;
+      flex: none;
+      display: block;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .ig-ring {
+      width: 40px;
+      height: 40px;
+      flex: none;
+      margin: -4px;
+      padding: 2px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    }
+
+    .ig-ring span {
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 2px;
+      border-radius: 50%;
+      background: var(--ig-bg);
+    }
+
+    .ig-ring .ig-av {
+      width: 100%;
+      height: 100%;
+    }
+
+    .ig-who {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .ig-line1 {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0 4px;
+    }
+
+    .ig-badge {
+      display: inline-flex;
+      color: var(--ig-blue);
+    }
+
+    .ig-badge svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .ig-sub {
+      color: var(--ig-sub);
+    }
+
+    .ig-follow {
+      color: var(--ig-blue);
+      font-weight: 600;
+    }
+
+    .ig-loc {
+      font-size: 12px;
+      line-height: 15px;
+      color: var(--ig-text);
+    }
+
+    .ig-dots {
+      width: 24px;
+      height: 24px;
+      flex: none;
+    }
+
+    .ig-media {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      background: var(--ig-line);
+    }
+
+    .ig-media img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .ig-count {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      background: rgba(26, 26, 26, 0.8);
+      color: #ffffff;
+      font-size: 12px;
+      line-height: 14px;
+    }
+
+    .ig-acts {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 12px 6px;
+    }
+
+    .ig-acts svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .ig-acts .ig-save {
+      margin-left: auto;
+    }
+
+    .ig-pips {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      gap: 4px;
+    }
+
+    .ig-pips i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ig-sub);
+      opacity: 0.45;
+    }
+
+    .ig-pips i.on {
+      background: var(--ig-blue);
+      opacity: 1;
+    }
+
+    .ig-body {
+      padding: 0 12px 12px;
+    }
+
+    .ig-body > div + div {
+      margin-top: 4px;
+    }
+
+    .ig-cap {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .ig-link {
+      color: var(--ig-link);
+    }
+
+    .ig-more {
+      color: var(--ig-sub);
+    }
+
+    .ig-time {
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--ig-sub);
+    }
+
+    /* ==========================================================
+       WHATSAPP CHAT (platform-accurate: Android layout, light and dark)
+       ========================================================== */
+    .wa {
+      --wa-head: #008069;
+      --wa-head-ink: #ffffff;
+      --wa-bg: #efeae2;
+      --wa-in: #ffffff;
+      --wa-out: #d9fdd3;
+      --wa-text: #111b21;
+      --wa-time: #667781;
+      --wa-tick: #53bdeb;
+      --wa-link: #027eb5;
+      --wa-chip: #ffffff;
+      --wa-chip-ink: #54656f;
+      --wa-reply: rgba(0, 0, 0, 0.06);
+      --wa-bar: #ffffff;
+      --wa-ring: rgba(0, 0, 0, 0.08);
+
+      width: var(--card-w);
+      border-radius: var(--wa-r, 16px);
+      overflow: hidden;
+      text-align: left;
+      color: var(--wa-text);
+      font: 400 14.2px/19px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      box-shadow: 0 0 0 1px var(--wa-ring), 0 2px 4px rgba(10, 14, 25, 0.08), 0 14px 36px rgba(10, 14, 25, 0.16);
+    }
+
+    .wa--dark {
+      --wa-head: #1f2c34;
+      --wa-head-ink: #e9edef;
+      --wa-bg: #0b141a;
+      --wa-in: #202c33;
+      --wa-out: #005c4b;
+      --wa-text: #e9edef;
+      --wa-time: rgba(255, 255, 255, 0.6);
+      --wa-link: #53bdeb;
+      --wa-chip: #182229;
+      --wa-chip-ink: #8696a0;
+      --wa-reply: rgba(0, 0, 0, 0.22);
+      --wa-bar: #1f2c34;
+      --wa-ring: rgba(255, 255, 255, 0.12);
+    }
+
+    .wa *,
+    .wa *::before,
+    .wa *::after {
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    .wa svg {
+      display: block;
+    }
+
+    .wa b {
+      font-weight: 700;
+    }
+
+    .wa-top {
+      background: var(--wa-head);
+      color: var(--wa-head-ink);
+    }
+
+    .wa-sb {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 18px 2px;
+      font-size: 12px;
+      line-height: 14px;
+      font-weight: 600;
+    }
+
+    .wa-sb-r {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .wa-sb svg {
+      height: 11px;
+      width: auto;
+      fill: currentColor;
+    }
+
+    .wa-hd {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px 10px 6px;
+    }
+
+    .wa-hd svg {
+      width: 22px;
+      height: 22px;
+      flex: none;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .wa-hd .wa-fill {
+      fill: currentColor;
+      stroke: none;
+    }
+
+    .wa-av {
+      width: 38px;
+      height: 38px;
+      flex: none;
+      display: block;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .wa-who {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .wa-name {
+      font-size: 17px;
+      line-height: 21px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .wa-stat {
+      font-size: 12.5px;
+      line-height: 15px;
+      opacity: 0.8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .wa-ic {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .wa-body {
+      display: flex;
+      flex-direction: column;
+      padding: 10px 10px 12px;
+      background-color: var(--wa-bg);
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><g fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' opacity='.07'><circle cx='16' cy='18' r='5'/><path d='M60 14l8 8M68 14l-8 8'/><path d='M20 66l6-10 6 10z'/><path d='M62 70q6-8 12 0t12 0'/></g></svg>");
+    }
+
+    .wa--dark .wa-body {
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><g fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' opacity='.05'><circle cx='16' cy='18' r='5'/><path d='M60 14l8 8M68 14l-8 8'/><path d='M20 66l6-10 6 10z'/><path d='M62 70q6-8 12 0t12 0'/></g></svg>");
+    }
+
+    .wa-day {
+      display: flex;
+      justify-content: center;
+      margin: 8px 0 6px;
+    }
+
+    .wa-day span {
+      padding: 5px 10px;
+      border-radius: 8px;
+      background: var(--wa-chip);
+      color: var(--wa-chip-ink);
+      font-size: 12.5px;
+      line-height: 16px;
+      box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+    }
+
+    .wa-row {
+      display: flex;
+      margin-top: 2px;
+    }
+
+    .wa-row--sw {
+      margin-top: 8px;
+    }
+
+    .wa-row--out {
+      justify-content: flex-end;
+    }
+
+    .wa-row--react {
+      margin-bottom: 14px;
+    }
+
+    .wa-b {
+      position: relative;
+      max-width: 82%;
+      padding: 5px 7px 6px 9px;
+      border-radius: 8px;
+      box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+    }
+
+    .wa-b--in {
+      background: var(--wa-in);
+    }
+
+    .wa-b--out {
+      background: var(--wa-out);
+    }
+
+    .wa-b--img {
+      width: 74%;
+      padding: 3px;
+    }
+
+    .wa-b--in.wa-tail {
+      border-top-left-radius: 0;
+    }
+
+    .wa-b--out.wa-tail {
+      border-top-right-radius: 0;
+    }
+
+    .wa-b--in.wa-tail::before,
+    .wa-b--out.wa-tail::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      width: 8px;
+      height: 13px;
+    }
+
+    .wa-b--in.wa-tail::before {
+      left: -8px;
+      background: var(--wa-in);
+      clip-path: polygon(100% 0, 0 0, 100% 100%);
+    }
+
+    .wa-b--out.wa-tail::before {
+      right: -8px;
+      background: var(--wa-out);
+      clip-path: polygon(0 0, 100% 0, 0 100%);
+    }
+
+    .wa-sender {
+      font-size: 13px;
+      line-height: 18px;
+      font-weight: 500;
+    }
+
+    .wa-reply {
+      margin-bottom: 4px;
+      padding: 4px 8px;
+      border-left: 4px solid #06a884;
+      border-radius: 6px;
+      background: var(--wa-reply);
+    }
+
+    .wa-b--img .wa-reply {
+      margin: 0 0 3px;
+    }
+
+    .wa-rname {
+      font-size: 12.5px;
+      line-height: 16px;
+      font-weight: 500;
+    }
+
+    .wa-rtext {
+      font-size: 13px;
+      line-height: 17px;
+      color: var(--wa-time);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .wa-pic {
+      position: relative;
+    }
+
+    .wa-pic img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+    }
+
+    .wa-pic .wa-meta {
+      position: absolute;
+      right: 6px;
+      bottom: 4px;
+      margin: 0;
+      color: #ffffff;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+    }
+
+    .wa-text {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .wa-b--img .wa-text {
+      padding: 4px 4px 1px;
+    }
+
+    .wa-text::after {
+      content: "";
+      display: block;
+      clear: both;
+    }
+
+    .wa-meta {
+      float: right;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      margin: 8px 0 -3px 10px;
+      font-size: 11px;
+      line-height: 15px;
+      color: var(--wa-time);
+    }
+
+    .wa-meta svg {
+      width: 16px;
+      height: 11px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .wa-meta .wa-read {
+      color: var(--wa-tick);
+    }
+
+    .wa-link {
+      color: var(--wa-link);
+    }
+
+    .wa-react {
+      position: absolute;
+      right: 10px;
+      bottom: -13px;
+      padding: 1px 5px;
+      border-radius: 12px;
+      background: var(--wa-in);
+      font-size: 14px;
+      line-height: 18px;
+      box-shadow: 0 1px 2px rgba(11, 20, 26, 0.25);
+    }
+
+    .wa-compose {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .wa-pill {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 24px;
+      background: var(--wa-bar);
+      color: var(--wa-time);
+      font-size: 16px;
+    }
+
+    .wa-pill span {
+      flex: 1;
+    }
+
+    .wa-pill svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .wa-mic {
+      width: 46px;
+      height: 46px;
+      flex: none;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #00a884;
+      color: #ffffff;
+    }
+
+    .wa-mic svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .post-item-body .lbl {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-2);
+    }
+
+    /* ==========================================================
+       FACEBOOK POST (platform-accurate: Facebook tokens, light and dark)
+       ========================================================== */
+    .fb {
+      --fb-bg: #ffffff;
+      --fb-text: #050505;
+      --fb-sub: #65676b;
+      --fb-line: #ced0d4;
+      --fb-blue: #1877f2;
+      --fb-bubble: #f0f2f5;
+      --fb-ring: rgba(0, 0, 0, 0.08);
+
+      width: var(--card-w);
+      background: var(--fb-bg);
+      color: var(--fb-text);
+      border-radius: var(--fb-r, 8px);
+      overflow: hidden;
+      text-align: left;
+      font: 400 15px/20px "Segoe UI Historic", "Segoe UI", Helvetica, Arial, sans-serif;
+      box-shadow: 0 0 0 1px var(--fb-ring), 0 2px 4px rgba(10, 14, 25, 0.08), 0 14px 36px rgba(10, 14, 25, 0.16);
+    }
+
+    .fb--dark {
+      --fb-bg: #242526;
+      --fb-text: #e4e6eb;
+      --fb-sub: #b0b3b8;
+      --fb-line: #3e4042;
+      --fb-blue: #2d88ff;
+      --fb-bubble: #3a3b3c;
+      --fb-ring: rgba(255, 255, 255, 0.1);
+    }
+
+    .fb *,
+    .fb *::before,
+    .fb *::after {
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    .fb svg {
+      display: block;
+    }
+
+    .fb-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 12px 16px 0;
+    }
+
+    .fb-av {
+      width: 40px;
+      height: 40px;
+      flex: none;
+      display: block;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .fb-who {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .fb-name {
+      font-weight: 600;
+    }
+
+    .fb-badge {
+      display: inline-flex;
+      vertical-align: -3px;
+      margin-left: 2px;
+      color: var(--fb-blue);
+    }
+
+    .fb-badge svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    .fb-follow {
+      font-weight: 600;
+      color: var(--fb-blue);
+    }
+
+    .fb-sub {
+      color: var(--fb-sub);
+    }
+
+    .fb-meta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      line-height: 16px;
+      color: var(--fb-sub);
+    }
+
+    .fb-meta svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .fb-tools {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: none;
+      color: var(--fb-sub);
+    }
+
+    .fb-tools svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .fb-text {
+      padding: 12px 16px 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .fb-link {
+      color: var(--fb-blue);
+    }
+
+    .fb-more {
+      color: var(--fb-sub);
+      font-weight: 600;
+    }
+
+    .fb-bgtext {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+      margin-top: 12px;
+      padding: 32px 24px;
+      color: #ffffff;
+      font-size: 28px;
+      line-height: 34px;
+      font-weight: 700;
+      text-align: center;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .fb-media {
+      display: grid;
+      gap: 2px;
+      margin-top: 12px;
+    }
+
+    .fb-media--1 {
+      display: block;
+    }
+
+    .fb-media--2,
+    .fb-media--3,
+    .fb-media--4 {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .fb-media--5 {
+      grid-template-columns: repeat(6, 1fr);
+    }
+
+    .fb-cell {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      aspect-ratio: 1 / 1;
+    }
+
+    .fb-media--1 .fb-cell {
+      aspect-ratio: auto;
+    }
+
+    .fb-media--3 .fb-cell:first-child {
+      grid-column: span 2;
+      aspect-ratio: 16 / 9;
+    }
+
+    .fb-media--5 .fb-cell {
+      grid-column: span 2;
+    }
+
+    .fb-media--5 .fb-cell:nth-child(-n + 2) {
+      grid-column: span 3;
+    }
+
+    .fb-cell img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .fb-media--1 .fb-cell img {
+      height: auto;
+    }
+
+    .fb-over {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.55);
+      color: #ffffff;
+      font-size: 32px;
+      font-weight: 600;
+    }
+
+    .fb-counts {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      color: var(--fb-sub);
+    }
+
+    .fb-counts-l {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .fb-rxs {
+      display: inline-flex;
+    }
+
+    .fb-rx {
+      width: 18px;
+      height: 18px;
+      margin-left: -3px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px var(--fb-bg);
+    }
+
+    .fb-rx:first-child {
+      margin-left: 0;
+    }
+
+    .fb-rx svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .fb-counts-r {
+      display: flex;
+      gap: 10px;
+      white-space: nowrap;
+    }
+
+    .fb-acts {
+      display: flex;
+      margin: 0 16px;
+      padding: 4px 0;
+      border-top: 1px solid var(--fb-line);
+    }
+
+    .fb-acts--b {
+      border-bottom: 1px solid var(--fb-line);
+    }
+
+    .fb-act {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 36px;
+      font-weight: 600;
+      color: var(--fb-sub);
+    }
+
+    .fb-act svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .fb-act--on {
+      color: var(--fb-blue);
+    }
+
+    .fb-cms {
+      display: grid;
+      gap: 8px;
+      padding: 12px 16px 0;
+    }
+
+    .fb-allc {
+      font-weight: 600;
+      color: var(--fb-sub);
+    }
+
+    .fb-cm {
+      display: flex;
+      gap: 8px;
+    }
+
+    .fb-cav {
+      width: 32px;
+      height: 32px;
+      flex: none;
+      display: block;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .fb-bub {
+      padding: 8px 12px;
+      border-radius: 18px;
+      background: var(--fb-bubble);
+      font-size: 15px;
+      line-height: 20px;
+    }
+
+    .fb-bub b {
+      display: block;
+      font-size: 13px;
+      line-height: 16px;
+      font-weight: 600;
+    }
+
+    .fb-cact {
+      display: flex;
+      gap: 12px;
+      padding: 2px 12px 0;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 600;
+      color: var(--fb-sub);
+    }
+
+    .fb-cact .fb-age {
+      font-weight: 400;
+    }
+
+    .fb-write {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+    }
+
+    .fb-write span {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 18px;
+      background: var(--fb-bubble);
+      color: var(--fb-sub);
+    }
+
+    .fb-end {
+      height: 12px;
+    }
+
+    /* ==========================================================
+       RESPONSIVE (continued)
+       ========================================================== */
+    @media (max-width: 960px) {
+      .app {
+        padding: var(--sp-3) var(--sp-4) var(--sp-5);
+      }
+
+      .tabs {
+        margin-left: 0;
+        order: 3;
+        width: 100%;
+      }
+
+      .top .icon-btn {
+        margin-left: auto;
+      }
+
+      .work {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--sp-5);
+      }
+
+      .stage-col {
+        order: -1;
+      }
+
+      .panel {
+        position: static;
+        max-height: none;
+      }
+
+      .stage {
+        padding: var(--sp-4);
+        min-height: 360px;
+      }
+
+      .bar {
+        justify-content: stretch;
+      }
+
+      .bar .btn {
+        flex: 1;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #card.settle {
+        animation: none;
+      }
+
+      .toast,
+      .switch,
+      .switch::after,
+      .sec summary::after {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <a class="brand" href="#">
+        <span class="mark" aria-hidden="true"></span>
+        <span class="brand-name">PostBench</span>
+        <span class="brand-by">by COTworks</span>
+      </a>
+      <nav class="tabs" id="tabs" aria-label="Platform"></nav>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch app theme"></button>
+    </header>
+
+    <section class="intro">
+      <h1>Build a post that looks posted.</h1>
+      <p>Change every detail of the post, from the profile photo to the reaction count, then download it as an image.</p>
+    </section>
+
+    <main class="work">
+      <aside class="panel" aria-label="Post settings">
+        <div class="panel-head">
+          <h2>Post settings</h2>
+          <button class="link-btn" id="resetBtn" type="button">Reset to sample</button>
+        </div>
+        <div id="controls"></div>
+      </aside>
+
+      <section class="stage-col" aria-label="Preview">
+        <div class="bar">
+          <button class="btn" id="copyBtn" type="button">Copy image</button>
+          <button class="btn btn--primary" id="dlBtn" type="button">Download PNG</button>
+        </div>
+        <div class="stage-wrap">
+          <span class="chip chip--top" id="chipTop"></span>
+          <div class="stage" id="stage">
+            <div id="fit">
+              <div id="scaler">
+                <div id="frame">
+                  <div id="card"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="chip chip--bottom" id="chipBottom"></span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      /* ======================================================
+         HELPERS
+         ====================================================== */
+      var $ = function (sel, root) { return (root || document).querySelector(sel); };
+
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
+      function fmt(n) {
+        return new Intl.NumberFormat('en-US').format(Math.max(0, Math.floor(Number(n) || 0)));
+      }
+
+      function clampInt(v) {
+        var n = parseInt(v, 10);
+        return isNaN(n) || n < 0 ? 0 : n;
+      }
+
+      function h(tag, props) {
+        var e = document.createElement(tag);
+        var p = props || {};
+        Object.keys(p).forEach(function (k) {
+          var v = p[k];
+          if (k === 'class') e.className = v;
+          else if (k === 'text') e.textContent = v;
+          else if (k === 'html') e.innerHTML = v;
+          else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), v);
+          else if (v === true) e.setAttribute(k, '');
+          else if (v !== false && v != null) e.setAttribute(k, v);
+        });
+        for (var i = 2; i < arguments.length; i++) {
+          var kids = [].concat(arguments[i]);
+          for (var j = 0; j < kids.length; j++) {
+            var c = kids[j];
+            if (c == null) continue;
+            e.append(c.nodeType ? c : document.createTextNode(c));
+          }
+        }
+        return e;
+      }
+
+      function dataSvg(svg) {
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      }
+
+      function toast(msg) {
+        var t = $('#toast');
+        t.textContent = msg;
+        t.classList.add('on');
+        clearTimeout(toast._t);
+        toast._t = setTimeout(function () { t.classList.remove('on'); }, 2200);
+      }
+
+      /* ======================================================
+         IMAGE HELPERS
+         ====================================================== */
+      function readImage(file, opts) {
+        return new Promise(function (resolve, reject) {
+          var url = URL.createObjectURL(file);
+          var img = new Image();
+          img.onload = function () {
+            var sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight, dw, dh;
+            if (opts.square) {
+              var m = Math.min(sw, sh);
+              sx = (sw - m) / 2;
+              sy = (sh - m) / 2;
+              sw = sh = m;
+              dw = dh = Math.min(opts.max, m);
+            } else {
+              var k = Math.min(1, opts.max / sw);
+              dw = Math.round(sw * k);
+              dh = Math.round(sh * k);
+            }
+            var c = document.createElement('canvas');
+            c.width = dw;
+            c.height = dh;
+            c.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
+            URL.revokeObjectURL(url);
+            var keepAlpha = /png|webp|gif|svg/.test(file.type);
+            resolve(c.toDataURL(keepAlpha ? 'image/png' : 'image/jpeg', 0.9));
+          };
+          img.onerror = function () {
+            URL.revokeObjectURL(url);
+            reject(new Error('That file could not be read as an image.'));
+          };
+          img.src = url;
+        });
+      }
+
+      function initials(name) {
+        var p = name.trim().split(/\s+/).filter(Boolean);
+        return ((p[0] || '?').charAt(0) + (p.length > 1 ? p[p.length - 1].charAt(0) : '')).toUpperCase();
+      }
+
+      function initialsAvatar(name) {
+        var colors = ['#0A66C2', '#7A4DD8', '#C2410C', '#0F766E', '#B4235A', '#3F4B5C'];
+        var hash = 0;
+        for (var i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+        return dataSvg(
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">' +
+          '<rect width="96" height="96" fill="' + colors[hash % colors.length] + '"/>' +
+          '<text x="48" y="48" dy=".35em" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="38" font-weight="600" fill="#fff">' +
+          esc(initials(name)) + '</text></svg>'
+        );
+      }
+
+      /* Sample post image: hand-built SVG so the default never looks empty */
+      var SAMPLE_ART = dataSvg(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 628">' +
+        '<defs>' +
+        '<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0F1626"/><stop offset="1" stop-color="#1C2C52"/></linearGradient>' +
+        '<radialGradient id="r" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FF5A2C" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A2C" stop-opacity="0"/></radialGradient>' +
+        '</defs>' +
+        '<rect width="1200" height="628" fill="url(#g)"/>' +
+        '<circle cx="900" cy="300" r="360" fill="url(#r)"/>' +
+        '<g font-family="Arial,Helvetica,sans-serif">' +
+        '<text x="80" y="250" font-size="30" fill="#FF8A63" font-weight="700">Release notes</text>' +
+        '<text x="80" y="340" font-size="84" fill="#fff" font-weight="800">Slotwise 2.4</text>' +
+        '<text x="80" y="404" font-size="28" fill="#A9B6D3">Scheduling that follows your calendar</text>' +
+        '</g>' +
+        '<g transform="translate(80 0)">' +
+        '<rect x="700" y="110" width="400" height="250" rx="28" fill="#fff"/>' +
+        '<rect x="740" y="250" width="44" height="70" rx="8" fill="#D9E2F5"/>' +
+        '<rect x="804" y="214" width="44" height="106" rx="8" fill="#B6C7EB"/>' +
+        '<rect x="868" y="180" width="44" height="140" rx="8" fill="#7C98DB"/>' +
+        '<rect x="932" y="146" width="44" height="174" rx="8" fill="#FF5A2C"/>' +
+        '<rect x="996" y="196" width="44" height="124" rx="8" fill="#1C2C52"/>' +
+        '<rect x="620" y="320" width="330" height="190" rx="28" fill="#FF5A2C"/>' +
+        '<circle cx="684" cy="384" r="30" fill="#fff"/>' +
+        '<path d="M670 384l10 11 20-23" fill="none" stroke="#FF5A2C" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<rect x="730" y="366" width="170" height="14" rx="7" fill="#fff"/>' +
+        '<rect x="730" y="394" width="120" height="14" rx="7" fill="#fff" fill-opacity=".6"/>' +
+        '<rect x="660" y="450" width="250" height="14" rx="7" fill="#fff" fill-opacity=".35"/>' +
+        '</g></svg>'
+      );
+
+      /* ======================================================
+         LINKEDIN ICONS AND REACTIONS
+         ====================================================== */
+      var ICON = {
+        like: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M7 11v9H4v-9h3zm0 0l4-8c1.6 0 2.6 1.1 2.3 2.6L12.7 9H19a2 2 0 011.9 2.6l-1.8 6.9A2 2 0 0117.2 20H7"/></svg>',
+        likeOn: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M7 11v9H4v-9h3zm0 0l4-8c1.6 0 2.6 1.1 2.3 2.6L12.7 9H19a2 2 0 011.9 2.6l-1.8 6.9A2 2 0 0117.2 20H7"/></svg>',
+        comment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5h16v11H11l-5 4v-4H4z"/></svg>',
+        repost: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M17 2l4 4-4 4M3 11V9a3 3 0 013-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 01-3 3H3"/></svg>',
+        send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M21 3L3 10.5l7 2.5 2.5 7zM10 13L21 3"/></svg>',
+        globe: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="8" cy="8" r="6.3"/><path d="M1.7 8h12.6M8 1.7c-2.6 2.2-2.6 10.4 0 12.6M8 1.7c2.6 2.2 2.6 10.4 0 12.6"/></svg>',
+        people: '<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="6" cy="5" r="2.4"/><path d="M1.5 13c0-2.6 2-4.2 4.5-4.2s4.5 1.6 4.5 4.2z"/><circle cx="11.2" cy="5.6" r="1.9"/><path d="M11.4 9c2 .1 3.3 1.4 3.3 3.5H12c0-1.4-.3-2.5-.9-3.5z"/></svg>',
+        dots: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+        plus: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>',
+        check: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>',
+        verified: '<svg viewBox="0 0 16 16"><path d="M8 1l5.5 2v4.2c0 3.2-2.2 5.9-5.5 7.3C4.7 13.100 2.500 10.400 2.500 7.200V3z" fill="currentColor"/><path d="M5.300 8l1.800 1.800L10.800 6" fill="none" stroke="#fff" stroke-width="1.500" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      };
+
+      var HEART = 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z';
+
+      var REACTIONS = {
+        like: { label: 'Like', bg: '#378fe9', glyph: '<path d="M2 21h4V9H2v12zm20-11c0-1.100-.9-2-2-2h-6.310l.95-4.570.03-.32c0-.41-.17-.79-.44-1.060L13.170 1 6.590 7.590C6.220 7.950 6 8.450 6 9v10c0 1.100.9 2 2 2h9c.83 0 1.540-.5 1.840-1.220l3.020-7.050c.09-.23.14-.47.14-.73v-2z"/>' },
+        celebrate: { label: 'Celebrate', bg: '#6dae4f', glyph: '<path d="M3 21l4.500-13 8.500 8.500zM14 4h2v3h-2zM18 8h3v2h-3zM17 2l1.500 1.500-1.500 1.500z"/>' },
+        support: { label: 'Support', bg: '#a872e8', glyph: '<path d="M12 17.500l-5.500-5.500 1.800-1.800L12 13.900l3.700-3.700 1.800 1.800z"/><path d="M12 14.500C9 12 6 10.200 6 7.500 6 5.800 7.300 4.500 9 4.500c1.200 0 2.300.7 3 1.700.7-1 1.800-1.700 3-1.700 1.700 0 3 1.300 3 3 0 2.700-3 4.500-6 7z" transform="translate(0 1)"/><path d="M2 17q10 7 20 0" fill="none" stroke="#fff" stroke-width="2"/>' },
+        love: { label: 'Love', bg: '#df704d', glyph: '<path d="' + HEART + '"/>' },
+        insightful: { label: 'Insightful', bg: '#f5bb5c', glyph: '<path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.140 2 5 5.140 5 9c0 2.380 1.190 4.470 3 5.740V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.260c1.810-1.270 3-3.360 3-5.740 0-3.860-3.140-7-7-7z"/>' },
+        funny: { label: 'Funny', bg: '#6dbfd0', glyph: '<path d="M7.500 8.500h2.500v2.500H7.500zM14 8.500h2.500v2.500H14zM5.500 13.500h13c0 3.800-3 6.500-6.500 6.500s-6.500-2.700-6.500-6.500z"/>' }
+      };
+
+      function reactionSvg(id) {
+        var r = REACTIONS[id] || REACTIONS.like;
+        return '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="' + r.bg + '"/>' +
+          '<g transform="translate(5.2 5.2) scale(.58)" fill="#fff">' + r.glyph + '</g></svg>';
+      }
+
+      /* ======================================================
+         TEXT FORMATTING FOR THE POST BODY
+         ====================================================== */
+      function formatText(raw, cls) {
+        return esc(raw).replace(
+          /(https?:\/\/[^\s<]+)|(^|[\s(])([#@][\p{L}\p{N}_]+)/gu,
+          function (m, url, pre, tag) {
+            var c = cls || 'lk-link';
+            return url ? '<span class="' + c + '">' + url + '</span>' : pre + '<span class="' + c + '">' + tag + '</span>';
+          }
+        );
+      }
+
+      /* LinkedIn cuts feed text at about 3 lines or 210 characters */
+      function cutText(raw) {
+        var lines = raw.split('\n');
+        var cut = false;
+        if (lines.length > 3) {
+          lines = lines.slice(0, 3);
+          cut = true;
+        }
+        var out = lines.join('\n');
+        if (out.length > 210) {
+          out = out.slice(0, 210);
+          var sp = out.lastIndexOf(' ');
+          if (sp > 120) out = out.slice(0, sp);
+          cut = true;
+        }
+        return { text: out.replace(/\s+$/, ''), cut: cut };
+      }
+
+      /* ======================================================
+         PLATFORM REGISTRY
+         To add a platform: add one entry with defaults, sections
+         (controls schema) and render(state) returning HTML.
+         ====================================================== */
+      var WIDTHS = { mobile: 390, feed: 555, wide: 720 };
+      var WIDTH_NAMES = { mobile: 'mobile', feed: 'feed', wide: 'wide' };
+
+      var BACKDROPS = [
+        { v: 'none', label: 'Transparent', cls: 'sw--none' },
+        { v: '#FFFFFF', label: 'White' },
+        { v: '#10131A', label: 'Ink' },
+        { v: 'linear-gradient(135deg,#FF5A2C 0%,#FFC38A 100%)', label: 'Ember' },
+        { v: 'linear-gradient(135deg,#1E3CFF 0%,#79C7FF 100%)', label: 'Tide' },
+        { v: 'linear-gradient(135deg,#0B6E5A 0%,#B9F3D8 100%)', label: 'Moss' },
+        { v: 'linear-gradient(135deg,#2A1B4D 0%,#E56BA0 100%)', label: 'Plum' }
+      ];
+
+      var SAMPLE_TEXT =
+        'We shipped Slotwise 2.4 this week. Scheduling that follows your calendar, not the other way round.\n\n' +
+        'Three things 412 beta users taught us:\n\n' +
+        '1. Nobody reads onboarding. They read the empty state.\n' +
+        '2. Time zones are a trust problem, not a math problem.\n' +
+        '3. One good default beats five settings.\n\n' +
+        'What would you have cut from the list?\n\n' +
+        '#productdesign #buildinpublic #saas';
+
+      var PLATFORMS = {};
+
+      PLATFORMS.linkedin = {
+        id: 'linkedin',
+        label: 'LinkedIn',
+        postName: 'LinkedIn post',
+
+        defaults: {
+          text: SAMPLE_TEXT,
+          truncate: false,
+          image: SAMPLE_ART,
+
+          profileType: 'person',
+          name: 'Ada Nwosu',
+          headline: 'Product designer at Slotwise | Building scheduling tools for remote teams',
+          avatar: '',
+          degree: '1st',
+          time: '3d',
+          visibility: 'public',
+          verified: false,
+          headerAction: 'follow',
+
+          reactions: 1219,
+          reactionTypes: ['like', 'celebrate', 'love'],
+          reactorMode: 'count',
+          reactorName: 'Tobi Adeyemi',
+          comments: 162,
+          reposts: 38,
+          liked: false,
+
+          theme: 'light',
+          width: 'feed',
+          radius: 'standard',
+          backdrop: 'linear-gradient(135deg,#FF5A2C 0%,#FFC38A 100%)',
+          padding: 48
+        },
+
+        sections: [
+          {
+            title: 'Content',
+            open: true,
+            fields: [
+              { key: 'text', type: 'textarea', label: 'Post text', rows: 8 },
+              { key: 'truncate', type: 'toggle', label: 'Cut off with \u201c\u2026more\u201d' },
+              { key: 'image', type: 'image', label: 'Post image', max: 1600, sample: true }
+            ]
+          },
+          {
+            title: 'Profile',
+            open: true,
+            fields: [
+              { key: 'profileType', type: 'seg', label: 'Posting as', options: [['person', 'Person'], ['company', 'Company page']] },
+              { key: 'name', type: 'text', label: 'Name' },
+              { key: 'headline', type: 'text', label: 'Headline or follower count' },
+              { key: 'avatar', type: 'image', label: 'Profile photo', max: 320, square: true },
+              { key: 'degree', type: 'seg', label: 'Connection', options: [['none', 'None'], ['1st', '1st'], ['2nd', '2nd'], ['3rd', '3rd']], showIf: function (s) { return s.profileType === 'person'; } },
+              { key: 'time', type: 'text', label: 'Posted' },
+              { key: 'visibility', type: 'seg', label: 'Audience', options: [['public', 'Public'], ['connections', 'Connections'], ['promoted', 'Promoted']] },
+              { key: 'headerAction', type: 'seg', label: 'Header button', options: [['none', 'None'], ['follow', 'Follow'], ['following', 'Following']] },
+              { key: 'verified', type: 'toggle', label: 'Verified badge' }
+            ]
+          },
+          {
+            title: 'Metrics',
+            fields: [
+              { key: 'reactions', type: 'number', label: 'Reactions' },
+              { key: 'reactionTypes', type: 'reactions', label: 'Reaction icons (up to 3)' },
+              { key: 'reactorMode', type: 'seg', label: 'Reaction label', options: [['count', 'Count only'], ['name', 'Name and others']] },
+              { key: 'reactorName', type: 'text', label: 'First reactor', showIf: function (s) { return s.reactorMode === 'name'; } },
+              { key: 'comments', type: 'number', label: 'Comments' },
+              { key: 'reposts', type: 'number', label: 'Reposts' },
+              { key: 'liked', type: 'toggle', label: 'Show Like as pressed' }
+            ]
+          },
+          {
+            title: 'Styling',
+            fields: [
+              { key: 'theme', type: 'seg', label: 'Post theme', options: [['light', 'Light'], ['dark', 'Dark']] },
+              { key: 'width', type: 'seg', label: 'Post width', options: [['mobile', 'Mobile'], ['feed', 'Feed'], ['wide', 'Wide']] },
+              { key: 'radius', type: 'seg', label: 'Corners', options: [['sharp', 'Sharp'], ['standard', 'Standard'], ['round', 'Round']] },
+              { key: 'backdrop', type: 'swatches', label: 'Backdrop' },
+              { key: 'padding', type: 'range', label: 'Backdrop padding', min: 0, max: 120, step: 4, unit: 'px' }
+            ]
+          }
+        ],
+
+        render: function (s) {
+          var company = s.profileType === 'company';
+          var avatar = s.avatar || initialsAvatar(s.name || 'Name');
+          var radius = { sharp: 0, standard: 8, round: 16 }[s.radius];
+
+          /* body text */
+          var body = '';
+          if (s.text.trim()) {
+            if (s.truncate) {
+              var c = cutText(s.text);
+              body = formatText(c.text) + (c.cut ? '<span class="lk-more">\u2026more</span>' : '');
+            } else {
+              body = formatText(s.text);
+            }
+            body = '<div class="lk-body">' + body + '</div>';
+          }
+
+          /* name row */
+          var nameRow =
+            '<span class="lk-name">' + esc(s.name) + '</span>' +
+            (s.verified ? '<span class="lk-ver">' + ICON.verified + '</span>' : '') +
+            (!company && s.degree !== 'none' ? '<span class="lk-deg">\u2022 ' + esc(s.degree) + '</span>' : '');
+
+          /* meta row */
+          var meta = '';
+          if (s.visibility === 'promoted') {
+            meta = '<span>Promoted</span>';
+          } else {
+            meta = (s.time ? '<span>' + esc(s.time) + ' \u2022</span>' : '') +
+              (s.visibility === 'connections' ? ICON.people : ICON.globe);
+          }
+
+          /* header button */
+          var action = '';
+          if (s.headerAction === 'follow') {
+            action = '<span class="lk-follow">' + ICON.plus + 'Follow</span>';
+          } else if (s.headerAction === 'following') {
+            action = '<span class="lk-follow lk-follow--on">' + ICON.check + 'Following</span>';
+          }
+
+          /* counts */
+          var left = '';
+          var rc = clampInt(s.reactions);
+          if (rc > 0) {
+            var types = (s.reactionTypes && s.reactionTypes.length ? s.reactionTypes : ['like']).slice(0, 3);
+            var icons = types.map(function (t, i) {
+              return '<span class="lk-rx" style="z-index:' + (3 - i) + '">' + reactionSvg(t) + '</span>';
+            }).join('');
+            var label;
+            if (s.reactorMode === 'name' && s.reactorName.trim()) {
+              label = rc === 1 ? esc(s.reactorName) : esc(s.reactorName) + ' and ' + fmt(rc - 1) + ' others';
+            } else {
+              label = fmt(rc);
+            }
+            left = '<span class="lk-rxs">' + icons + '</span><span>' + label + '</span>';
+          }
+          var cc = clampInt(s.comments);
+          var rp = clampInt(s.reposts);
+          var rightParts = [];
+          if (cc > 0) rightParts.push(fmt(cc) + ' comment' + (cc === 1 ? '' : 's'));
+          if (rp > 0) rightParts.push(fmt(rp) + ' repost' + (rp === 1 ? '' : 's'));
+          var counts = (left || rightParts.length)
+            ? '<div class="lk-counts"><div class="lk-counts-l">' + left + '</div><div>' + rightParts.join(' \u2022 ') + '</div></div>'
+            : '';
+
+          var image = s.image ? '<img class="lk-img" src="' + esc(s.image) + '" alt="">' : '';
+
+          return (
+            '<article class="lk lk--' + s.theme + '" style="--lk-r:' + radius + 'px">' +
+              '<header class="lk-head">' +
+                '<img class="lk-av' + (company ? ' lk-av--co' : '') + '" src="' + esc(avatar) + '" alt="">' +
+                '<div class="lk-who">' +
+                  '<div class="lk-name-row">' + nameRow + '</div>' +
+                  (s.headline ? '<div class="lk-sub">' + esc(s.headline) + '</div>' : '') +
+                  '<div class="lk-meta">' + meta + '</div>' +
+                '</div>' +
+                '<div class="lk-top">' + action + '<span class="lk-dots">' + ICON.dots + '</span></div>' +
+              '</header>' +
+              body +
+              image +
+              counts +
+              '<div class="lk-actions">' +
+                '<span class="lk-act' + (s.liked ? ' lk-act--on' : '') + '">' + (s.liked ? ICON.likeOn : ICON.like) + 'Like</span>' +
+                '<span class="lk-act">' + ICON.comment + 'Comment</span>' +
+                '<span class="lk-act">' + ICON.repost + 'Repost</span>' +
+                '<span class="lk-act">' + ICON.send + 'Send</span>' +
+              '</div>' +
+            '</article>'
+          );
+        }
+      };
+
+      /* ======================================================
+         X (TWITTER): helpers and platform entry
+         ====================================================== */
+      function compact(n) {
+        n = Math.max(0, Math.floor(Number(n) || 0));
+        if (n < 1000) return String(n);
+        var units = [[1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
+        for (var i = 0; i < units.length; i++) {
+          if (n >= units[i][0]) {
+            var x = n / units[i][0];
+            var t = x < 100 ? String(Math.floor(x * 10) / 10) : String(Math.floor(x));
+            return t + units[i][1];
+          }
+        }
+        return String(n);
+      }
+
+      function fullNum(n) {
+        n = clampInt(n);
+        return n < 100000 ? fmt(n) : compact(n);
+      }
+
+      function xi(d) {
+        return '<svg viewBox="0 0 24 24"><path d="' + d + '"/></svg>';
+      }
+
+      var XI = {
+        reply: xi('M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01zm8.005-6c-3.317 0-6.005 2.69-6.005 6 0 3.37 2.77 6.08 6.138 6.01l.351-.01h1.761v2.3l5.087-2.81c1.951-1.08 3.163-3.13 3.163-5.36 0-3.39-2.744-6.13-6.129-6.13H9.756z'),
+        repost: xi('M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z'),
+        like: xi('M16.697 5.5c-1.222-.06-2.679.51-3.89 2.16l-.805 1.09-.806-1.09C9.984 6.01 8.526 5.44 7.304 5.5c-1.243.07-2.349.78-2.91 1.91-.552 1.12-.633 2.78.479 4.82 1.074 1.97 3.257 4.27 7.129 6.61 3.87-2.34 6.052-4.64 7.126-6.61 1.111-2.04 1.03-3.7.477-4.82-.561-1.13-1.666-1.84-2.908-1.91zm4.187 7.69c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z'),
+        likeOn: xi('M20.884 13.19c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z'),
+        views: xi('M8.75 21V3h2v18h-2zM18 21V8.5h2V21h-2zM4 21l.004-10h2L6 21H4zm9.248 0v-7h2v7h-2z'),
+        bookmark: xi('M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5zM6.5 4c-.276 0-.5.22-.5.5v14.56l6-4.29 6 4.29V4.5c0-.28-.224-.5-.5-.5h-11z'),
+        bookmarkOn: xi('M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5z'),
+        share: xi('M12 2.59l5.7 5.7-1.41 1.42L13 6.41V16h-2V6.41l-3.29 3.3-1.42-1.42L12 2.59zM21 15l-.02 3.51c0 1.38-1.12 2.49-2.5 2.49H5.5C4.11 21 3 19.88 3 18.5V15h2v3.5c0 .28.22.5.5.5h12.98c.28 0 .5-.22.5-.5L19 15h2z'),
+        badge: xi('M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z'),
+        dots: '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>'
+      };
+
+      PLATFORMS.x = {
+        id: 'x',
+        label: 'X',
+        postName: 'X post',
+        widths: { mobile: 390, feed: 600, wide: 720 },
+
+        defaults: {
+          posts: [
+            {
+              text: 'Hot take: the best onboarding is no onboarding.\n\nShip a clear empty state, make the first action obvious, and let people learn by doing.\n\n#buildinpublic',
+              images: [SAMPLE_ART],
+              replies: 48,
+              reposts: 212,
+              likes: 3841,
+              views: 182000
+            },
+            {
+              text: 'Why it works: every screen you add before the product is a screen someone can quit on.',
+              images: [],
+              replies: 9,
+              reposts: 31,
+              likes: 620,
+              views: 41000
+            },
+            {
+              text: 'What I would test first: remove one step, watch the drop-off, repeat.',
+              images: [],
+              replies: 4,
+              reposts: 12,
+              likes: 305,
+              views: 23000
+            }
+          ],
+          threadStats: true,
+
+          name: 'Ada Nwosu',
+          handle: 'adanwosu',
+          avatar: '',
+          verified: 'blue',
+          time: '2h',
+          dateLine: '10:42 AM \u00b7 Oct 11, 2026',
+
+          quotes: 17,
+          bookmarks: 164,
+          liked: false,
+          reposted: false,
+          bookmarked: false,
+
+          view: 'feed',
+          theme: 'light',
+          width: 'feed',
+          radius: 'standard',
+          backdrop: 'linear-gradient(135deg,#1E3CFF 0%,#79C7FF 100%)',
+          padding: 48
+        },
+
+        sections: [
+          {
+            title: 'Posts',
+            open: true,
+            fields: [
+              { key: 'posts', type: 'posts', label: 'Main post and thread' },
+              { key: 'threadStats', type: 'toggle', label: 'Show stats on thread posts', showIf: function (s) { return s.view === 'feed'; } }
+            ]
+          },
+          {
+            title: 'Profile',
+            open: true,
+            fields: [
+              { key: 'name', type: 'text', label: 'Name' },
+              { key: 'handle', type: 'text', label: 'Handle' },
+              { key: 'avatar', type: 'image', label: 'Profile photo', max: 320, square: true },
+              { key: 'verified', type: 'seg', label: 'Verified badge', options: [['none', 'None'], ['blue', 'Blue'], ['gold', 'Gold'], ['gray', 'Gray']] },
+              { key: 'time', type: 'text', label: 'Posted', showIf: function (s) { return s.view === 'feed'; } },
+              { key: 'dateLine', type: 'text', label: 'Date and time', showIf: function (s) { return s.view === 'detail'; } }
+            ]
+          },
+          {
+            title: 'Extras',
+            fields: [
+              { key: 'quotes', type: 'number', label: 'Quotes (post page)', showIf: function (s) { return s.view === 'detail'; } },
+              { key: 'bookmarks', type: 'number', label: 'Bookmarks (post page)', showIf: function (s) { return s.view === 'detail'; } },
+              { key: 'liked', type: 'toggle', label: 'Main post: Like pressed' },
+              { key: 'reposted', type: 'toggle', label: 'Main post: Repost pressed' },
+              { key: 'bookmarked', type: 'toggle', label: 'Main post: Bookmark pressed' }
+            ]
+          },
+          {
+            title: 'Styling',
+            fields: [
+              { key: 'view', type: 'seg', label: 'View', options: [['feed', 'Feed'], ['detail', 'Post page']] },
+              { key: 'theme', type: 'seg', label: 'Post theme', options: [['light', 'Light'], ['dim', 'Dim'], ['dark', 'Lights out']] },
+              { key: 'width', type: 'seg', label: 'Post width', options: [['mobile', 'Mobile'], ['feed', 'Feed'], ['wide', 'Wide']] },
+              { key: 'radius', type: 'seg', label: 'Corners', options: [['sharp', 'Sharp'], ['standard', 'Standard'], ['round', 'Round']] },
+              { key: 'backdrop', type: 'swatches', label: 'Backdrop' },
+              { key: 'padding', type: 'range', label: 'Backdrop padding', min: 0, max: 120, step: 4, unit: 'px' }
+            ]
+          }
+        ],
+
+        render: function (s) {
+          var radius = { sharp: 0, standard: 16, round: 24 }[s.radius];
+          var handle = '@' + String(s.handle).replace(/^@+/, '');
+          var avatar = s.avatar || initialsAvatar(s.name || 'Name');
+          var badgeColor = { blue: '#1d9bf0', gold: '#e2b719', gray: '#829aab' }[s.verified];
+          var badge = badgeColor ? '<span class="x-badge" style="color:' + badgeColor + '">' + XI.badge + '</span>' : '';
+          var open = '<article class="x x--' + s.theme + '" style="--x-r:' + radius + 'px">';
+
+          function body(t, big) {
+            return t.trim() ? '<div class="x-text' + (big ? ' x-text--big' : '') + '">' + formatText(t, 'x-link') + '</div>' : '';
+          }
+
+          function media(images) {
+            var shown = images.slice(0, 4);
+            if (!shown.length) return '';
+            return '<div class="x-media x-media--' + shown.length + '">' +
+              shown.map(function (src) { return '<img src="' + esc(src) + '" alt="">'; }).join('') +
+              '</div>';
+          }
+
+          function act(icon, n, cls) {
+            return '<span class="x-act' + (cls ? ' ' + cls : '') + '">' + icon + (n > 0 ? '<span>' + compact(n) + '</span>' : '') + '</span>';
+          }
+
+          var first = s.posts[0];
+
+          /* post page view: main post only */
+          if (s.view === 'detail') {
+            var stat = function (n, one, many) {
+              n = clampInt(n);
+              return n > 0 ? '<span><b>' + fullNum(n) + '</b> ' + (n === 1 ? one : many) + '</span>' : '';
+            };
+            var stats = stat(first.reposts, 'Repost', 'Reposts') + stat(s.quotes, 'Quote', 'Quotes') +
+              stat(first.likes, 'Like', 'Likes') + stat(s.bookmarks, 'Bookmark', 'Bookmarks');
+            var meta = esc(s.dateLine) +
+              (clampInt(first.views) > 0 ? (s.dateLine ? ' \u00b7 ' : '') + '<b>' + fullNum(first.views) + '</b> Views' : '');
+            return open +
+              '<div class="x-detail">' +
+                '<div class="x-dhead">' +
+                  '<img class="x-av" src="' + esc(avatar) + '" alt="">' +
+                  '<div class="x-dwho"><div class="x-dname"><span class="x-name">' + esc(s.name) + '</span>' + badge + '</div><div class="x-sub">' + esc(handle) + '</div></div>' +
+                  '<span class="x-dots">' + XI.dots + '</span>' +
+                '</div>' +
+                body(first.text, true) + media(first.images) +
+                (meta ? '<div class="x-dmeta">' + meta + '</div>' : '') +
+                (stats ? '<div class="x-dstats">' + stats + '</div>' : '') +
+                '<div class="x-dacts">' +
+                  act(XI.reply, 0) +
+                  act(XI.repost, 0, s.reposted ? 'x-act--rt' : '') +
+                  act(s.liked ? XI.likeOn : XI.like, 0, s.liked ? 'x-act--like' : '') +
+                  act(s.bookmarked ? XI.bookmarkOn : XI.bookmark, 0, s.bookmarked ? 'x-act--bm' : '') +
+                  act(XI.share, 0) +
+                '</div>' +
+              '</div></article>';
+          }
+
+          /* feed view, with thread */
+          var html = s.posts.map(function (p, i) {
+            var main = i === 0;
+            var row = '';
+            if (main || s.threadStats) {
+              row = '<div class="x-acts">' +
+                act(XI.reply, p.replies) +
+                act(XI.repost, p.reposts, main && s.reposted ? 'x-act--rt' : '') +
+                act(main && s.liked ? XI.likeOn : XI.like, p.likes, main && s.liked ? 'x-act--like' : '') +
+                act(XI.views, p.views) +
+                '<span class="x-acts-r">' +
+                  '<span class="x-act' + (main && s.bookmarked ? ' x-act--bm' : '') + '">' + (main && s.bookmarked ? XI.bookmarkOn : XI.bookmark) + '</span>' +
+                  '<span class="x-act">' + XI.share + '</span>' +
+                '</span>' +
+              '</div>';
+            }
+            return '<div class="x-post' + (main ? '' : ' x-post--cont') + '">' +
+              '<div class="x-rail"><img class="x-av" src="' + esc(avatar) + '" alt="">' + (i < s.posts.length - 1 ? '<span class="x-line"></span>' : '') + '</div>' +
+              '<div class="x-main">' +
+                '<div class="x-head"><div class="x-id">' +
+                  '<span class="x-name">' + esc(s.name) + '</span>' + badge +
+                  '<span class="x-sub">' + esc(handle) + '</span>' +
+                  (s.time ? '<span class="x-sub">\u00b7</span><span class="x-sub">' + esc(s.time) + '</span>' : '') +
+                '</div><span class="x-dots">' + XI.dots + '</span></div>' +
+                body(p.text, false) + media(p.images) + row +
+              '</div></div>';
+          }).join('');
+
+          return open + html + '</article>';
+        }
+      };
+
+      /* ======================================================
+         INSTAGRAM: sample art, icons and platform entry
+         ====================================================== */
+      function igArt(sky1, sky2, sun, hill1, hill2, hill3) {
+        return dataSvg(
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350">' +
+          '<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + sky1 + '"/><stop offset="1" stop-color="' + sky2 + '"/></linearGradient></defs>' +
+          '<rect width="1080" height="1350" fill="url(#s)"/>' +
+          '<circle cx="540" cy="600" r="210" fill="' + sun + '"/>' +
+          '<path d="M0 860C220 760 430 770 640 850S950 890 1080 810V1350H0Z" fill="' + hill1 + '"/>' +
+          '<path d="M0 1010C260 920 520 950 760 1010S1000 1060 1080 990V1350H0Z" fill="' + hill2 + '"/>' +
+          '<path d="M0 1160C240 1090 500 1110 740 1160S980 1200 1080 1150V1350H0Z" fill="' + hill3 + '"/>' +
+          '</svg>'
+        );
+      }
+
+      var IG_ART = [
+        igArt('#FFD08A', '#FF6A3D', '#FFF4D6', '#C2410C', '#7C2D12', '#431407'),
+        igArt('#BFD8FF', '#5B7CFA', '#FFFFFF', '#2F4FBF', '#1E3A8A', '#172554'),
+        igArt('#C8F2DC', '#2FA37A', '#F2FFF8', '#0F766E', '#115E59', '#134E4A')
+      ];
+
+      var IGI = {
+        heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7.500-4.600-9.600-9.200C.9 8.600 2.600 4.500 6.500 4.500c2 0 3.700 1.100 5.500 3.100 1.800-2 3.500-3.100 5.500-3.100 3.900 0 5.600 4.100 4.100 7.300C19.500 16.400 12 21 12 21z"/></svg>',
+        heartOn: '<svg viewBox="0 0 24 24" fill="#ff3040" stroke="#ff3040" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7.500-4.600-9.600-9.200C.9 8.600 2.600 4.500 6.500 4.500c2 0 3.700 1.100 5.500 3.100 1.800-2 3.500-3.100 5.500-3.100 3.900 0 5.600 4.100 4.100 7.300C19.500 16.400 12 21 12 21z"/></svg>',
+        comment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.656 17.008a9.993 9.993 0 10-3.590 3.615L22 22z"/></svg>',
+        share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><line x1="22" y1="3" x2="9.218" y2="10.083"/><polygon points="11.698 20.334 22 3.001 2 3.001 9.218 10.083 11.698 20.334"/></svg>',
+        save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="20 21 12 13.440 4 21 4 3 20 3 20 21"/></svg>',
+        saveOn: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="20 21 12 13.440 4 21 4 3 20 3 20 21"/></svg>',
+        dots: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.800"/><circle cx="6" cy="12" r="1.800"/><circle cx="18" cy="12" r="1.800"/></svg>'
+      };
+
+      PLATFORMS.instagram = {
+        id: 'instagram',
+        label: 'Instagram',
+        postName: 'Instagram post',
+        widths: { mobile: 390, feed: 470, wide: 600 },
+
+        defaults: {
+          caption: 'Golden hour in the studio, and the first print of the season is finally dry.\n\nSwipe for the process shots. Which colourway should I run next?\n\n#studiolife #printmaking #handmade',
+          truncate: false,
+          images: IG_ART.slice(),
+          slide: 1,
+          aspect: 'square',
+
+          username: 'adanwosu.studio',
+          avatar: '',
+          verified: false,
+          storyRing: true,
+          headerTag: 'none',
+          location: 'Lagos, Nigeria',
+          time: '2 days ago',
+
+          likes: 1248,
+          likesMode: 'liked_by',
+          likedBy: 'tobi.adeyemi',
+          comments: 62,
+          previewComments: 'tobi.adeyemi: That second colourway is unreal\nnkechi_o: Saving this for my own studio',
+          liked: false,
+          saved: false,
+          addComment: false,
+
+          theme: 'light',
+          width: 'feed',
+          radius: 'standard',
+          backdrop: 'linear-gradient(135deg,#2A1B4D 0%,#E56BA0 100%)',
+          padding: 48
+        },
+
+        sections: [
+          {
+            title: 'Content',
+            open: true,
+            fields: [
+              { key: 'images', type: 'images', label: 'Photos (carousel when more than one)', maxCount: 20 },
+              { key: 'slide', type: 'number', label: 'Slide to show', showIf: function (s) { return s.images.length > 1; } },
+              { key: 'aspect', type: 'seg', label: 'Photo shape', options: [['square', 'Square'], ['portrait', 'Portrait'], ['landscape', 'Landscape']] },
+              { key: 'caption', type: 'textarea', label: 'Caption', rows: 6 },
+              { key: 'truncate', type: 'toggle', label: 'Cut off with \u201c\u2026 more\u201d' }
+            ]
+          },
+          {
+            title: 'Profile',
+            open: true,
+            fields: [
+              { key: 'username', type: 'text', label: 'Username' },
+              { key: 'avatar', type: 'image', label: 'Profile photo', max: 320, square: true },
+              { key: 'location', type: 'text', label: 'Location (optional)' },
+              { key: 'time', type: 'text', label: 'Posted' },
+              { key: 'headerTag', type: 'seg', label: 'Header tag', options: [['none', 'None'], ['follow', 'Follow'], ['sponsored', 'Sponsored']] },
+              { key: 'storyRing', type: 'toggle', label: 'Story ring around photo' },
+              { key: 'verified', type: 'toggle', label: 'Verified badge' }
+            ]
+          },
+          {
+            title: 'Metrics',
+            fields: [
+              { key: 'likes', type: 'number', label: 'Likes' },
+              { key: 'likesMode', type: 'seg', label: 'Likes label', options: [['count', 'Count'], ['liked_by', 'Liked by'], ['hidden', 'Hidden']] },
+              { key: 'likedBy', type: 'text', label: 'Liked by username', showIf: function (s) { return s.likesMode === 'liked_by'; } },
+              { key: 'comments', type: 'number', label: 'Comments' },
+              { key: 'previewComments', type: 'textarea', label: 'Visible comments (one per line, username: text)', rows: 3 },
+              { key: 'addComment', type: 'toggle', label: 'Show \u201cAdd a comment\u201d row' },
+              { key: 'liked', type: 'toggle', label: 'Show Like as pressed' },
+              { key: 'saved', type: 'toggle', label: 'Show Save as pressed' }
+            ]
+          },
+          {
+            title: 'Styling',
+            fields: [
+              { key: 'theme', type: 'seg', label: 'Post theme', options: [['light', 'Light'], ['dark', 'Dark']] },
+              { key: 'width', type: 'seg', label: 'Post width', options: [['mobile', 'Mobile'], ['feed', 'Feed'], ['wide', 'Wide']] },
+              { key: 'radius', type: 'seg', label: 'Corners', options: [['sharp', 'Sharp'], ['standard', 'Standard'], ['round', 'Round']] },
+              { key: 'backdrop', type: 'swatches', label: 'Backdrop' },
+              { key: 'padding', type: 'range', label: 'Backdrop padding', min: 0, max: 120, step: 4, unit: 'px' }
+            ]
+          }
+        ],
+
+        render: function (s) {
+          var radius = { sharp: 0, standard: 8, round: 16 }[s.radius];
+          var ratio = { square: '1 / 1', portrait: '4 / 5', landscape: '1.91 / 1' }[s.aspect];
+          var avatar = s.avatar || initialsAvatar(s.username || 'User');
+          var total = s.images.length;
+          var at = Math.min(Math.max(clampInt(s.slide), 1), Math.max(total, 1)) - 1;
+
+          /* header */
+          var av = '<img class="ig-av" src="' + esc(avatar) + '" alt="">';
+          if (s.storyRing) av = '<div class="ig-ring"><span>' + av + '</span></div>';
+          var line1 = '<b>' + esc(s.username) + '</b>' +
+            (s.verified ? '<span class="ig-badge">' + XI.badge + '</span>' : '') +
+            (s.time ? '<span class="ig-sub">\u2022 ' + esc(s.time) + '</span>' : '') +
+            (s.headerTag === 'follow' ? '<span class="ig-sub">\u2022</span><span class="ig-follow">Follow</span>' : '');
+          var line2 = s.headerTag === 'sponsored' ? 'Sponsored' : (s.location || '');
+
+          /* media */
+          var media = '';
+          if (total) {
+            media = '<div class="ig-media" style="aspect-ratio:' + ratio + '">' +
+              '<img src="' + esc(s.images[at]) + '" alt="">' +
+              (total > 1 ? '<span class="ig-count">' + (at + 1) + '/' + total + '</span>' : '') +
+              '</div>';
+          }
+
+          /* pips */
+          var pips = '';
+          if (total > 1) {
+            var win = Math.min(total, 5);
+            var first = Math.min(Math.max(at - 2, 0), total - win);
+            pips = '<div class="ig-pips">' + s.images.slice(first, first + win).map(function (_, k) {
+              var i = first + k;
+              return '<i' + (i === at ? ' class="on"' : '') + '></i>';
+            }).join('') + '</div>';
+          }
+
+          /* likes */
+          var lk = clampInt(s.likes);
+          var likes = '';
+          if (lk > 0 && s.likesMode === 'count') {
+            likes = '<div><b>' + fmt(lk) + (lk === 1 ? ' like' : ' likes') + '</b></div>';
+          } else if (lk > 0 && s.likesMode === 'liked_by' && s.likedBy.trim()) {
+            likes = '<div>Liked by <b>' + esc(s.likedBy) + '</b>' + (lk > 1 ? ' and <b>' + fmt(lk - 1) + (lk === 2 ? ' other' : ' others') + '</b>' : '') + '</div>';
+          }
+
+          /* caption */
+          var cap = '';
+          if (s.caption.trim()) {
+            var text = s.caption;
+            var more = false;
+            if (s.truncate) {
+              var lines = text.split('\n');
+              if (lines.length > 2) { lines = lines.slice(0, 2); more = true; }
+              text = lines.join('\n');
+              if (text.length > 125) {
+                text = text.slice(0, 125);
+                var sp = text.lastIndexOf(' ');
+                if (sp > 60) text = text.slice(0, sp);
+                more = true;
+              }
+              text = text.replace(/\s+$/, '');
+            }
+            cap = '<div class="ig-cap"><b>' + esc(s.username) + '</b> ' + formatText(text, 'ig-link') +
+              (more ? '\u2026 <span class="ig-more">more</span>' : '') + '</div>';
+          }
+
+          /* comments */
+          var cc = clampInt(s.comments);
+          var viewAll = cc > 0 ? '<div class="ig-sub">View all ' + fmt(cc) + (cc === 1 ? ' comment' : ' comments') + '</div>' : '';
+          var shown = '';
+          s.previewComments.split('\n').slice(0, 2).forEach(function (line) {
+            var m = line.match(/^\s*([^:]+?)\s*:\s*(.+)$/);
+            if (m) shown += '<div><b>' + esc(m[1]) + '</b> ' + formatText(m[2], 'ig-link') + '</div>';
+          });
+
+          return (
+            '<article class="ig ig--' + s.theme + '" style="--ig-r:' + radius + 'px">' +
+              '<header class="ig-head">' + av +
+                '<div class="ig-who"><div class="ig-line1">' + line1 + '</div>' +
+                (line2 ? '<div class="ig-loc">' + esc(line2) + '</div>' : '') + '</div>' +
+                '<span class="ig-dots">' + IGI.dots + '</span>' +
+              '</header>' +
+              media +
+              '<div class="ig-acts">' +
+                (s.liked ? IGI.heartOn : IGI.heart) + IGI.comment + IGI.share + pips +
+                '<span class="ig-save">' + (s.saved ? IGI.saveOn : IGI.save) + '</span>' +
+              '</div>' +
+              '<div class="ig-body">' +
+                likes + cap + viewAll + shown +
+                (s.time ? '<div class="ig-time">' + esc(s.time) + '</div>' : '') +
+                (s.addComment ? '<div class="ig-sub">Add a comment\u2026</div>' : '') +
+              '</div>' +
+            '</article>'
+          );
+        }
+      };
+
+      /* ======================================================
+         WHATSAPP: helpers, icons and platform entry
+         ====================================================== */
+      function waFormat(raw) {
+        var t = esc(raw);
+        [['*', 'b'], ['_', 'i'], ['~', 's']].forEach(function (p) {
+          var q = '\\' + p[0];
+          var re = new RegExp('(^|[\\s(])' + q + '([^' + q + '\\n]+?)' + q + '(?=$|[\\s.,!?:;)])', 'g');
+          t = t.replace(re, function (m, pre, body) {
+            return pre + '<' + p[1] + '>' + body + '</' + p[1] + '>';
+          });
+        });
+        return t.replace(/(https?:\/\/[^\s<]+)/g, '<span class="wa-link">$1</span>');
+      }
+
+      function waColor(name) {
+        var colors = ['#1fa855', '#d6336c', '#e6770a', '#7e57c2', '#0b8cc2', '#c2185b'];
+        var hash = 0;
+        for (var i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+        return colors[hash % colors.length];
+      }
+
+      var WAI = {
+        back: '<svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>',
+        video: '<svg viewBox="0 0 24 24"><rect x="2" y="6" width="13" height="12" rx="2"/><path d="M15 10l6-3v10l-6-3z"/></svg>',
+        call: '<svg viewBox="0 0 24 24" class="wa-fill"><path d="M6.620 10.790c1.440 2.830 3.760 5.140 6.590 6.590l2.200-2.200c.27-.27.67-.36 1.020-.24 1.120.37 2.330.57 3.570.57.550 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.390 0-17-7.610-17-17 0-.55.45-1 1-1h3.500c.55 0 1 .45 1 1 0 1.250.2 2.450.57 3.570.11.35.03.74-.25 1.020l-2.200 2.200z"/></svg>',
+        more: '<svg viewBox="0 0 24 24" class="wa-fill"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>',
+        signal: '<svg viewBox="0 0 16 11"><rect x="0" y="7" width="3" height="4" rx=".6"/><rect x="4.300" y="5" width="3" height="6" rx=".6"/><rect x="8.600" y="2.500" width="3" height="8.500" rx=".6"/><rect x="12.900" y="0" width="3" height="11" rx=".6"/></svg>',
+        battery: '<svg viewBox="0 0 26 12"><rect x=".6" y=".6" width="21.800" height="10.800" rx="3" fill="none" stroke="currentColor" stroke-width="1.200" opacity=".6"/><rect x="2.200" y="2.200" width="18.600" height="7.600" rx="1.800"/><path d="M24 4v4c.8-.3 1.400-1.100 1.400-2s-.6-1.700-1.400-2z" opacity=".6"/></svg>',
+        smile: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 14c1 1.500 2.300 2.200 4 2.200s3-.7 4-2.200M9 9.500h.01M15 9.500h.01"/></svg>',
+        clip: '<svg viewBox="0 0 24 24"><path d="M20 11.500l-7.500 7.500a5 5 0 01-7-7L13 4.500a3.300 3.300 0 014.700 4.700l-7.500 7.500a1.700 1.700 0 01-2.400-2.400L14 7.500"/></svg>',
+        camera: '<svg viewBox="0 0 24 24"><path d="M4 8h3l1.500-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.500"/></svg>',
+        mic: '<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>'
+      };
+
+      function waTicks(status) {
+        if (status === 'none') return '';
+        var one = '<path d="M1 6.200l3.200 3.200L10.400 1.600"/>';
+        var two = '<path d="M1 6.200l3.200 3.200L10.400 1.600"/><path d="M5.600 8.600l1.200 1.200L14.400 1.600"/>';
+        return '<svg viewBox="0 0 16 11"' + (status === 'read' ? ' class="wa-read"' : '') + '>' + (status === 'sent' ? one : two) + '</svg>';
+      }
+
+      PLATFORMS.whatsapp = {
+        id: 'whatsapp',
+        label: 'WhatsApp',
+        postName: 'WhatsApp chat',
+        widths: { mobile: 360, feed: 390, wide: 480 },
+
+        defaults: {
+          messages: [
+            { dir: 'in', text: 'Hey Ada, did the scheduling release go out?', time: '09:41', status: 'none', image: '', sender: 'Tobi Adeyemi', replyName: '', replyText: '', reaction: '', divider: 'Today' },
+            { dir: 'out', text: 'Yes! *Slotwise 2.4* shipped this morning', time: '09:42', status: 'read', image: '', sender: '', replyName: '', replyText: '', reaction: '', divider: '' },
+            { dir: 'out', text: 'Early numbers look good. 412 beta users already moved over', time: '09:42', status: 'read', image: '', sender: '', replyName: '', replyText: '', reaction: '', divider: '' },
+            { dir: 'in', text: 'Congrats! Sending it to the team now', time: '09:44', status: 'none', image: '', sender: 'Tobi Adeyemi', replyName: 'You', replyText: 'Yes! Slotwise 2.4 shipped this morning', reaction: '', divider: '' },
+            { dir: 'out', text: 'Here is the new calendar view', time: '09:45', status: 'delivered', image: SAMPLE_ART, sender: '', replyName: '', replyText: '', reaction: '\uD83D\uDD25', divider: '' }
+          ],
+
+          contact: 'Tobi Adeyemi',
+          contactStatus: 'online',
+          avatar: '',
+          chatType: 'direct',
+          statusBar: true,
+          statusTime: '9:41',
+          inputBar: true,
+
+          theme: 'light',
+          width: 'feed',
+          radius: 'standard',
+          backdrop: 'linear-gradient(135deg,#0B6E5A 0%,#B9F3D8 100%)',
+          padding: 48
+        },
+
+        sections: [
+          {
+            title: 'Conversation',
+            open: true,
+            fields: [
+              { key: 'messages', type: 'messages', label: 'Messages (formatting works: *bold* _italic_ ~strike~)' }
+            ]
+          },
+          {
+            title: 'Chat header',
+            open: true,
+            fields: [
+              { key: 'contact', type: 'text', label: 'Contact or group name' },
+              { key: 'contactStatus', type: 'text', label: 'Status line (online, last seen, members)' },
+              { key: 'avatar', type: 'image', label: 'Profile photo', max: 320, square: true },
+              { key: 'chatType', type: 'seg', label: 'Chat type', options: [['direct', 'Direct'], ['group', 'Group']] },
+              { key: 'statusBar', type: 'toggle', label: 'Phone status bar' },
+              { key: 'statusTime', type: 'text', label: 'Phone clock', showIf: function (s) { return s.statusBar; } },
+              { key: 'inputBar', type: 'toggle', label: 'Message bar at the bottom' }
+            ]
+          },
+          {
+            title: 'Styling',
+            fields: [
+              { key: 'theme', type: 'seg', label: 'Chat theme', options: [['light', 'Light'], ['dark', 'Dark']] },
+              { key: 'width', type: 'seg', label: 'Screen width', options: [['mobile', 'Narrow'], ['feed', 'Phone'], ['wide', 'Wide']] },
+              { key: 'radius', type: 'seg', label: 'Corners', options: [['sharp', 'Sharp'], ['standard', 'Standard'], ['round', 'Round']] },
+              { key: 'backdrop', type: 'swatches', label: 'Backdrop' },
+              { key: 'padding', type: 'range', label: 'Backdrop padding', min: 0, max: 120, step: 4, unit: 'px' }
+            ]
+          }
+        ],
+
+        render: function (s) {
+          var radius = { sharp: 0, standard: 16, round: 28 }[s.radius];
+          var avatar = s.avatar || initialsAvatar(s.contact || 'Chat');
+          var group = s.chatType === 'group';
+
+          var sb = s.statusBar
+            ? '<div class="wa-sb"><span>' + esc(s.statusTime) + '</span><span class="wa-sb-r">' + WAI.signal + WAI.battery + '</span></div>'
+            : '';
+
+          var head =
+            '<div class="wa-top">' + sb +
+              '<div class="wa-hd">' + WAI.back +
+                '<img class="wa-av" src="' + esc(avatar) + '" alt="">' +
+                '<div class="wa-who"><div class="wa-name">' + esc(s.contact) + '</div>' +
+                (s.contactStatus ? '<div class="wa-stat">' + esc(s.contactStatus) + '</div>' : '') + '</div>' +
+                '<div class="wa-ic">' + WAI.video + WAI.call + WAI.more + '</div>' +
+              '</div>' +
+            '</div>';
+
+          var rows = s.messages.map(function (m, i) {
+            var prev = s.messages[i - 1];
+            var out = m.dir === 'out';
+            var newRun = !prev || prev.dir !== m.dir || !!m.divider;
+            var hasText = m.text.trim().length > 0;
+
+            var meta = '<span class="wa-meta">' + esc(m.time) + (out ? waTicks(m.status) : '') + '</span>';
+
+            var sender = (!out && group && m.sender.trim())
+              ? '<div class="wa-sender" style="color:' + waColor(m.sender) + '">' + esc(m.sender) + '</div>'
+              : '';
+
+            var reply = (m.replyName.trim() || m.replyText.trim())
+              ? '<div class="wa-reply"><div class="wa-rname" style="color:' + (m.replyName.trim().toLowerCase() === 'you' ? '#06a884' : waColor(m.replyName)) + '">' + esc(m.replyName) + '</div>' +
+                '<div class="wa-rtext">' + esc(m.replyText) + '</div></div>'
+              : '';
+
+            var pic = m.image
+              ? '<div class="wa-pic"><img src="' + esc(m.image) + '" alt="">' + (hasText ? '' : meta) + '</div>'
+              : '';
+
+            var text = (hasText || !m.image)
+              ? '<div class="wa-text">' + waFormat(m.text) + meta + '</div>'
+              : '';
+
+            var react = m.reaction.trim() ? '<span class="wa-react">' + esc(m.reaction) + '</span>' : '';
+
+            var day = m.divider.trim() ? '<div class="wa-day"><span>' + esc(m.divider) + '</span></div>' : '';
+
+            return day +
+              '<div class="wa-row wa-row--' + m.dir + (newRun && prev && !m.divider ? ' wa-row--sw' : '') + (react ? ' wa-row--react' : '') + '">' +
+                '<div class="wa-b wa-b--' + m.dir + (newRun ? ' wa-tail' : '') + (m.image ? ' wa-b--img' : '') + '">' +
+                  sender + reply + pic + text + react +
+                '</div>' +
+              '</div>';
+          }).join('');
+
+          var compose = s.inputBar
+            ? '<div class="wa-compose"><div class="wa-pill">' + WAI.smile + '<span>Message</span>' + WAI.clip + WAI.camera + '</div>' +
+              '<div class="wa-mic">' + WAI.mic + '</div></div>'
+            : '';
+
+          return '<article class="wa wa--' + s.theme + '" style="--wa-r:' + radius + 'px">' +
+            head + '<div class="wa-body">' + rows + compose + '</div></article>';
+        }
+      };
+
+      /* ======================================================
+         FACEBOOK: reactions, icons and platform entry
+         ====================================================== */
+      var FB_YELLOW = '<circle cx="12" cy="12" r="12" fill="#f7b125"/>';
+      var FB_INK = '#5a3a00';
+
+      var FBR = {
+        like: '<circle cx="12" cy="12" r="12" fill="#1877f2"/><g transform="translate(5.500 5.500) scale(.54)" fill="#fff">' + REACTIONS.like.glyph + '</g>',
+        love: '<circle cx="12" cy="12" r="12" fill="#f33e58"/><g transform="translate(5.500 5.600) scale(.54)" fill="#fff"><path d="' + HEART + '"/></g>',
+        care: FB_YELLOW + '<g transform="translate(5.500 5.800) scale(.54)" fill="#f33e58"><path d="' + HEART + '"/></g>',
+        haha: FB_YELLOW + '<path d="M6 10q2-3 4 0M14 10q2-3 4 0" stroke="' + FB_INK + '" stroke-width="1.600" fill="none" stroke-linecap="round"/><path d="M6.500 13h11c0 3.500-2.500 6-5.500 6s-5.500-2.500-5.500-6z" fill="' + FB_INK + '"/>',
+        wow: FB_YELLOW + '<circle cx="8.500" cy="9.500" r="1.400" fill="' + FB_INK + '"/><circle cx="15.500" cy="9.500" r="1.400" fill="' + FB_INK + '"/><ellipse cx="12" cy="16" rx="2.200" ry="3" fill="' + FB_INK + '"/>',
+        sad: FB_YELLOW + '<circle cx="8.500" cy="10" r="1.400" fill="' + FB_INK + '"/><circle cx="15.500" cy="10" r="1.400" fill="' + FB_INK + '"/><path d="M8 17q4-4 8 0" stroke="' + FB_INK + '" stroke-width="1.600" fill="none" stroke-linecap="round"/>',
+        angry: '<circle cx="12" cy="12" r="12" fill="#e9710f"/><path d="M6.500 8.500l4 2M17.500 8.500l-4 2" stroke="' + FB_INK + '" stroke-width="1.800" stroke-linecap="round"/><circle cx="9" cy="12" r="1.300" fill="' + FB_INK + '"/><circle cx="15" cy="12" r="1.300" fill="' + FB_INK + '"/><path d="M8.500 17.500q3.500-3 7 0" stroke="' + FB_INK + '" stroke-width="1.600" fill="none" stroke-linecap="round"/>'
+      };
+
+      function fbRx(id) {
+        return '<svg viewBox="0 0 24 24">' + (FBR[id] || FBR.like) + '</svg>';
+      }
+
+      var FBI = {
+        lock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.300"><rect x="3.500" y="7" width="9" height="6.500" rx="1.500"/><path d="M5.500 7V5a2.500 2.500 0 015 0v2"/></svg>',
+        close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+        share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.700" stroke-linejoin="round" stroke-linecap="round"><path d="M14 5l7 7-7 7v-4c-6 0-9 2-11 6 1-7 4-12 11-13z"/></svg>'
+      };
+
+      var FB_TEXT_BG = {
+        blue: 'linear-gradient(135deg,#1e3cff,#6ea8ff)',
+        orange: 'linear-gradient(135deg,#ff5a2c,#ffc38a)',
+        green: 'linear-gradient(135deg,#0b6e5a,#2fa37a)',
+        dark: '#18191a'
+      };
+
+      PLATFORMS.facebook = {
+        id: 'facebook',
+        label: 'Facebook',
+        postName: 'Facebook post',
+        widths: { mobile: 390, feed: 500, wide: 680 },
+
+        defaults: {
+          text: 'We just wrapped our first community studio day. Thank you to everyone who came by, ate too much jollof and left feedback on the new prints.\n\nMore photos in the comments.',
+          truncate: false,
+          textBg: 'none',
+          images: IG_ART.slice(),
+
+          name: 'Ada Nwosu',
+          avatar: '',
+          verified: false,
+          activity: 'is at Lagos, Nigeria.',
+          time: '2h',
+          audience: 'public',
+          headerTag: 'none',
+
+          likes: 1248,
+          reactionTypes: ['like', 'love', 'care'],
+          likesMode: 'count',
+          reactorName: 'Tobi Adeyemi',
+          comments: 62,
+          shares: 14,
+          previewComments: 'Tobi Adeyemi: That second colourway is unreal\nNkechi Okoro: Saving this for my own studio',
+          commentAge: '1h',
+          writeComment: true,
+          liked: false,
+
+          theme: 'light',
+          width: 'feed',
+          radius: 'standard',
+          backdrop: 'linear-gradient(135deg,#1E3CFF 0%,#79C7FF 100%)',
+          padding: 48
+        },
+
+        sections: [
+          {
+            title: 'Content',
+            open: true,
+            fields: [
+              { key: 'text', type: 'textarea', label: 'Post text', rows: 6 },
+              { key: 'truncate', type: 'toggle', label: 'Cut off with \u201cSee more\u201d' },
+              { key: 'images', type: 'images', label: 'Photos (grid layouts follow Facebook)', maxCount: 10 },
+              { key: 'textBg', type: 'seg', label: 'Coloured text background (no photos)', options: [['none', 'None'], ['blue', 'Blue'], ['orange', 'Orange'], ['green', 'Green'], ['dark', 'Dark']], showIf: function (s) { return s.images.length === 0; } }
+            ]
+          },
+          {
+            title: 'Profile',
+            open: true,
+            fields: [
+              { key: 'name', type: 'text', label: 'Name' },
+              { key: 'avatar', type: 'image', label: 'Profile photo', max: 320, square: true },
+              { key: 'activity', type: 'text', label: 'Activity after the name (optional)' },
+              { key: 'time', type: 'text', label: 'Posted' },
+              { key: 'audience', type: 'seg', label: 'Audience', options: [['public', 'Public'], ['friends', 'Friends'], ['me', 'Only me']] },
+              { key: 'headerTag', type: 'seg', label: 'Header tag', options: [['none', 'None'], ['follow', 'Follow'], ['sponsored', 'Sponsored']] },
+              { key: 'verified', type: 'toggle', label: 'Verified badge' }
+            ]
+          },
+          {
+            title: 'Metrics',
+            fields: [
+              { key: 'likes', type: 'number', label: 'Reactions' },
+              { key: 'reactionTypes', type: 'multi', label: 'Reaction icons (up to 3)', max: 3, options: [['like', 'Like'], ['love', 'Love'], ['care', 'Care'], ['haha', 'Haha'], ['wow', 'Wow'], ['sad', 'Sad'], ['angry', 'Angry']] },
+              { key: 'likesMode', type: 'seg', label: 'Reaction label', options: [['count', 'Count only'], ['name', 'Name and others']] },
+              { key: 'reactorName', type: 'text', label: 'First reactor', showIf: function (s) { return s.likesMode === 'name'; } },
+              { key: 'comments', type: 'number', label: 'Comments' },
+              { key: 'shares', type: 'number', label: 'Shares' },
+              { key: 'previewComments', type: 'textarea', label: 'Visible comments (one per line, Name: text)', rows: 3 },
+              { key: 'commentAge', type: 'text', label: 'Comment age' },
+              { key: 'writeComment', type: 'toggle', label: 'Show \u201cWrite a comment\u201d row' },
+              { key: 'liked', type: 'toggle', label: 'Show Like as pressed' }
+            ]
+          },
+          {
+            title: 'Styling',
+            fields: [
+              { key: 'theme', type: 'seg', label: 'Post theme', options: [['light', 'Light'], ['dark', 'Dark']] },
+              { key: 'width', type: 'seg', label: 'Post width', options: [['mobile', 'Mobile'], ['feed', 'Feed'], ['wide', 'Wide']] },
+              { key: 'radius', type: 'seg', label: 'Corners', options: [['sharp', 'Sharp'], ['standard', 'Standard'], ['round', 'Round']] },
+              { key: 'backdrop', type: 'swatches', label: 'Backdrop' },
+              { key: 'padding', type: 'range', label: 'Backdrop padding', min: 0, max: 120, step: 4, unit: 'px' }
+            ]
+          }
+        ],
+
+        render: function (s) {
+          var radius = { sharp: 0, standard: 8, round: 16 }[s.radius];
+          var avatar = s.avatar || initialsAvatar(s.name || 'Name');
+          var total = s.images.length;
+
+          /* header */
+          var follow = s.headerTag === 'follow' ? ' <span class="fb-sub">\u00b7</span> <span class="fb-follow">Follow</span>' : '';
+          var badge = s.verified ? '<span class="fb-badge">' + XI.badge + '</span>' : '';
+          var activity = s.activity.trim() ? ' <span>' + esc(s.activity) + '</span>' : '';
+          var audIcon = { public: ICON.globe, friends: ICON.people, me: FBI.lock }[s.audience];
+          var meta = s.headerTag === 'sponsored'
+            ? '<span>Sponsored</span><span>\u00b7</span>' + audIcon
+            : (s.time ? '<span>' + esc(s.time) + '</span><span>\u00b7</span>' : '') + audIcon;
+
+          /* text */
+          var text = s.text;
+          var more = false;
+          if (s.truncate && !(s.textBg !== 'none' && !total)) {
+            var lines = text.split('\n');
+            if (lines.length > 3) { lines = lines.slice(0, 3); more = true; }
+            text = lines.join('\n');
+            if (text.length > 200) {
+              text = text.slice(0, 200);
+              var sp = text.lastIndexOf(' ');
+              if (sp > 100) text = text.slice(0, sp);
+              more = true;
+            }
+            text = text.replace(/\s+$/, '');
+          }
+          var bgMode = !total && s.textBg !== 'none' && s.text.trim();
+          var body = '';
+          if (bgMode) {
+            body = '<div class="fb-bgtext" style="background:' + FB_TEXT_BG[s.textBg] + '">' + esc(s.text) + '</div>';
+          } else if (s.text.trim()) {
+            body = '<div class="fb-text">' + formatText(text, 'fb-link') + (more ? '\u2026 <span class="fb-more">See more</span>' : '') + '</div>';
+          }
+
+          /* photos */
+          var media = '';
+          if (total) {
+            var shown = s.images.slice(0, 5);
+            var layout = Math.min(total, 5);
+            var cells = shown.map(function (src, i) {
+              var over = (total > 5 && i === 4) ? '<div class="fb-over">+' + (total - 5) + '</div>' : '';
+              return '<div class="fb-cell"><img src="' + esc(src) + '" alt="">' + over + '</div>';
+            }).join('');
+            media = '<div class="fb-media fb-media--' + layout + '">' + cells + '</div>';
+          }
+
+          /* reaction and engagement counts */
+          var lk = clampInt(s.likes);
+          var left = '';
+          if (lk > 0) {
+            var types = (s.reactionTypes && s.reactionTypes.length ? s.reactionTypes : ['like']).slice(0, 3);
+            var icons = types.map(function (t, i) {
+              return '<span class="fb-rx" style="z-index:' + (3 - i) + '">' + fbRx(t) + '</span>';
+            }).join('');
+            var label = (s.likesMode === 'name' && s.reactorName.trim())
+              ? (lk === 1 ? esc(s.reactorName) : esc(s.reactorName) + ' and ' + compact(lk - 1) + ' others')
+              : compact(lk);
+            left = '<span class="fb-rxs">' + icons + '</span><span>' + label + '</span>';
+          }
+          var cc = clampInt(s.comments);
+          var sh = clampInt(s.shares);
+          var right = '';
+          if (cc > 0) right += '<span>' + compact(cc) + (cc === 1 ? ' comment' : ' comments') + '</span>';
+          if (sh > 0) right += '<span>' + compact(sh) + (sh === 1 ? ' share' : ' shares') + '</span>';
+          var counts = (left || right) ? '<div class="fb-counts"><div class="fb-counts-l">' + left + '</div><div class="fb-counts-r">' + right + '</div></div>' : '';
+
+          /* comments */
+          var cms = '';
+          var shownCount = 0;
+          s.previewComments.split('\n').slice(0, 3).forEach(function (line) {
+            var m = line.match(/^\s*([^:]+?)\s*:\s*(.+)$/);
+            if (!m) return;
+            shownCount++;
+            cms += '<div class="fb-cm"><img class="fb-cav" src="' + esc(initialsAvatar(m[1])) + '" alt="">' +
+              '<div><div class="fb-bub"><b>' + esc(m[1]) + '</b>' + esc(m[2]) + '</div>' +
+              '<div class="fb-cact"><span>Like</span><span>Reply</span>' + (s.commentAge ? '<span class="fb-age">' + esc(s.commentAge) + '</span>' : '') + '</div></div></div>';
+          });
+          if (cc > shownCount && shownCount > 0) cms = '<div class="fb-allc">View more comments</div>' + cms;
+          var comments = cms ? '<div class="fb-cms">' + cms + '</div>' : '';
+          var write = s.writeComment
+            ? '<div class="fb-write"><img class="fb-cav" src="' + esc(avatar) + '" alt=""><span>Write a comment\u2026</span></div>'
+            : '';
+          var tail = (comments || write) ? '' : '<div class="fb-end"></div>';
+
+          return (
+            '<article class="fb fb--' + s.theme + '" style="--fb-r:' + radius + 'px">' +
+              '<header class="fb-head">' +
+                '<img class="fb-av" src="' + esc(avatar) + '" alt="">' +
+                '<div class="fb-who"><div><span class="fb-name">' + esc(s.name) + '</span>' + badge + activity + follow + '</div>' +
+                '<div class="fb-meta">' + meta + '</div></div>' +
+                '<div class="fb-tools">' + ICON.dots + FBI.close + '</div>' +
+              '</header>' +
+              body + media + counts +
+              '<div class="fb-acts' + (comments || write ? ' fb-acts--b' : '') + '">' +
+                '<span class="fb-act' + (s.liked ? ' fb-act--on' : '') + '">' + (s.liked ? ICON.likeOn : ICON.like) + 'Like</span>' +
+                '<span class="fb-act">' + ICON.comment + 'Comment</span>' +
+                '<span class="fb-act">' + FBI.share + 'Share</span>' +
+              '</div>' +
+              comments + write + tail +
+            '</article>'
+          );
+        }
+      };
+
+      /* Platforms still to build. Shown disabled in the tab strip. */
+      var UPCOMING = [];
+
+      /* ======================================================
+         STATE
+         ====================================================== */
+      var STORE_KEY = 'postbench:v1';
+      var current = 'linkedin';
+      var state = {};
+      var syncers = [];
+      var visibles = [];
+
+      function cloneDefaults(id) {
+        return JSON.parse(JSON.stringify(PLATFORMS[id].defaults));
+      }
+
+      function loadState() {
+        Object.keys(PLATFORMS).forEach(function (id) {
+          state[id] = cloneDefaults(id);
+        });
+        try {
+          var saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+          Object.keys(saved).forEach(function (id) {
+            if (!state[id]) return;
+            Object.keys(state[id]).forEach(function (k) {
+              if (saved[id] && saved[id][k] !== undefined && typeof saved[id][k] === typeof state[id][k]) {
+                state[id][k] = saved[id][k];
+              }
+            });
+          });
+        } catch (e) { /* storage unavailable or corrupt: use defaults */ }
+      }
+
+      var saveTimer;
+      function queueSave() {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(function () {
+          try {
+            localStorage.setItem(STORE_KEY, JSON.stringify(state));
+          } catch (e) { /* quota or blocked: ignore */ }
+        }, 300);
+      }
+
+      function set(key, val) {
+        state[current][key] = val;
+        renderPreview();
+        applyVisibility();
+      }
+
+      /* ======================================================
+         CONTROLS (generated from each platform's schema)
+         ====================================================== */
+      function buildField(f) {
+        var s = function () { return state[current]; };
+        var root = h('div', { class: 'field' });
+        var sync = function () {};
+
+        if (f.type === 'text' || f.type === 'number' || f.type === 'textarea') {
+          var input = f.type === 'textarea'
+            ? h('textarea', { rows: f.rows || 4, id: 'f-' + f.key })
+            : h('input', { type: f.type === 'number' ? 'number' : 'text', id: 'f-' + f.key, min: f.type === 'number' ? 0 : null, inputmode: f.type === 'number' ? 'numeric' : null });
+          input.addEventListener('input', function () {
+            set(f.key, f.type === 'number' ? clampInt(input.value) : input.value);
+          });
+          root.append(h('label', { class: 'lbl', for: 'f-' + f.key, text: f.label }), input);
+          sync = function () { input.value = s()[f.key]; };
+
+        } else if (f.type === 'seg') {
+          var btns = f.options.map(function (o) {
+            return h('button', {
+              type: 'button',
+              'data-v': o[0],
+              text: o[1],
+              onclick: function () { set(f.key, o[0]); syncAll(); }
+            });
+          });
+          root.append(h('div', { class: 'lbl', text: f.label }), h('div', { class: 'seg', role: 'group', 'aria-label': f.label }, btns));
+          sync = function () {
+            btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === s()[f.key])); });
+          };
+
+        } else if (f.type === 'toggle') {
+          var cb = h('input', { type: 'checkbox', role: 'switch', onchange: function () { set(f.key, cb.checked); } });
+          root.append(h('label', { class: 'switch-row' }, h('span', { text: f.label }), cb, h('span', { class: 'switch' })));
+          sync = function () { cb.checked = !!s()[f.key]; };
+
+        } else if (f.type === 'range') {
+          var out = h('span');
+          var rng = h('input', { type: 'range', min: f.min, max: f.max, step: f.step, id: 'f-' + f.key });
+          rng.addEventListener('input', function () {
+            out.textContent = rng.value + f.unit;
+            set(f.key, Number(rng.value));
+          });
+          root.append(h('label', { class: 'lbl', for: 'f-' + f.key }, h('span', { text: f.label }), out), rng);
+          sync = function () { rng.value = s()[f.key]; out.textContent = rng.value + f.unit; };
+
+        } else if (f.type === 'image') {
+          var file = h('input', { type: 'file', accept: 'image/*', hidden: true });
+          var thumb = h('div', { class: 'img-thumb', 'aria-hidden': 'true' });
+          var buttons = [
+            h('button', { type: 'button', class: 'btn', text: 'Upload', onclick: function () { file.click(); } }),
+            h('button', { type: 'button', class: 'btn', text: 'Remove', onclick: function () { set(f.key, ''); syncAll(); } })
+          ];
+          if (f.sample) {
+            buttons.push(h('button', { type: 'button', class: 'btn', text: 'Sample', onclick: function () { set(f.key, SAMPLE_ART); syncAll(); } }));
+          }
+          file.addEventListener('change', function () {
+            var picked = file.files && file.files[0];
+            file.value = '';
+            if (!picked) return;
+            readImage(picked, { max: f.max, square: !!f.square }).then(function (url) {
+              set(f.key, url);
+              syncAll();
+            }).catch(function (err) { toast(err.message); });
+          });
+          root.append(h('div', { class: 'lbl', text: f.label }), h('div', { class: 'img-field' }, thumb, h('div', { class: 'btn-row' }, buttons), file));
+          sync = function () {
+            var v = s()[f.key];
+            if (!v && f.key === 'avatar') v = initialsAvatar(s().name || 'Name');
+            thumb.style.backgroundImage = v ? 'url("' + v.replace(/"/g, '%22') + '")' : 'none';
+          };
+
+        } else if (f.type === 'reactions') {
+          var chips = Object.keys(REACTIONS).map(function (id) {
+            return h('button', {
+              type: 'button',
+              class: 'rx-chip',
+              'data-id': id,
+              html: reactionSvg(id) + '<span>' + REACTIONS[id].label + '</span>',
+              onclick: function () {
+                var list = s()[f.key].slice();
+                var at = list.indexOf(id);
+                if (at > -1) { if (list.length > 1) list.splice(at, 1); }
+                else { list.push(id); if (list.length > 3) list.shift(); }
+                set(f.key, list);
+                syncAll();
+              }
+            });
+          });
+          root.append(h('div', { class: 'lbl', text: f.label }), h('div', { class: 'rx-picker' }, chips));
+          sync = function () {
+            chips.forEach(function (c) { c.setAttribute('aria-pressed', String(s()[f.key].indexOf(c.getAttribute('data-id')) > -1)); });
+          };
+
+        } else if (f.type === 'posts') {
+          var list = h('div', { class: 'posts' });
+          var open = { 0: true };
+          var pickIdx = 0;
+          var pick = h('input', { type: 'file', accept: 'image/*', multiple: true, hidden: true });
+
+          var rebuild = function () {
+            list.innerHTML = '';
+            var arr = s()[f.key];
+            arr.forEach(function (post, i) {
+              var thumbs = h('div', { class: 'thumbs' }, post.images.map(function (src, j) {
+                var t = h('div', { class: 'thumb' }, h('button', {
+                  type: 'button',
+                  'aria-label': 'Remove image ' + (j + 1),
+                  text: '\u00d7',
+                  onclick: function () {
+                    post.images.splice(j, 1);
+                    set(f.key, arr);
+                    rebuild();
+                  }
+                }));
+                t.style.backgroundImage = 'url("' + src.replace(/"/g, '%22') + '")';
+                return t;
+              }));
+
+              var addImg = h('button', {
+                type: 'button',
+                class: 'btn',
+                text: 'Add images (' + post.images.length + '/4)',
+                disabled: post.images.length >= 4,
+                onclick: function () { pickIdx = i; pick.click(); }
+              });
+
+              var ta = h('textarea', { rows: 3, 'aria-label': 'Text of post ' + (i + 1) });
+              ta.value = post.text;
+              ta.addEventListener('input', function () {
+                post.text = ta.value;
+                set(f.key, arr);
+              });
+
+              var stats = h('div', { class: 'stat-grid' }, [['replies', 'Replies'], ['reposts', 'Reposts'], ['likes', 'Likes'], ['views', 'Views']].map(function (m) {
+                var inp = h('input', { type: 'number', min: 0, inputmode: 'numeric' });
+                inp.value = post[m[0]];
+                inp.addEventListener('input', function () {
+                  post[m[0]] = clampInt(inp.value);
+                  set(f.key, arr);
+                });
+                return h('label', null, m[1], inp);
+              }));
+
+              var head = [h('span', { text: i === 0 ? 'Main post' : 'Thread post ' + i })];
+              if (i > 0) {
+                head.push(h('button', {
+                  type: 'button',
+                  class: 'post-rm',
+                  text: 'Remove',
+                  onclick: function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    set(f.key, arr.filter(function (_, k) { return k !== i; }));
+                    open = { 0: true };
+                    rebuild();
+                  }
+                }));
+              }
+
+              var det = h('details', { class: 'post-item', open: !!open[i] },
+                h('summary', null, head),
+                h('div', { class: 'post-item-body' }, ta, thumbs, h('div', { class: 'btn-row' }, addImg), stats)
+              );
+              det.addEventListener('toggle', function () { open[i] = det.open; });
+              list.append(det);
+            });
+          };
+
+          pick.addEventListener('change', function () {
+            var files = Array.prototype.slice.call(pick.files || []);
+            pick.value = '';
+            var arr = s()[f.key];
+            var post = arr[pickIdx];
+            if (!post || !files.length) return;
+            var room = 4 - post.images.length;
+            if (files.length > room) toast('Only ' + room + ' more image' + (room === 1 ? '' : 's') + ' fit on one post.');
+            Promise.all(files.slice(0, room).map(function (file) {
+              return readImage(file, { max: 1600, square: false });
+            })).then(function (urls) {
+              post.images = post.images.concat(urls);
+              open[pickIdx] = true;
+              set(f.key, arr);
+              rebuild();
+            }).catch(function (err) { toast(err.message); });
+          });
+
+          var addPost = h('button', {
+            type: 'button',
+            class: 'btn',
+            text: 'Add thread post',
+            onclick: function () {
+              var arr = s()[f.key].slice();
+              if (arr.length >= 10) { toast('Threads are limited to 10 posts here.'); return; }
+              arr.push({ text: '', images: [], replies: 0, reposts: 0, likes: 0, views: 0 });
+              open[arr.length - 1] = true;
+              set(f.key, arr);
+              rebuild();
+            }
+          });
+
+          root.append(h('div', { class: 'lbl', text: f.label }), list, h('div', { class: 'btn-row' }, addPost), pick);
+          sync = rebuild;
+
+        } else if (f.type === 'images') {
+          var strip = h('div', { class: 'thumbs' });
+          var pickAll = h('input', { type: 'file', accept: 'image/*', multiple: true, hidden: true });
+          var addAll = h('button', { type: 'button', class: 'btn', onclick: function () { pickAll.click(); } });
+
+          var paint = function () {
+            var arr = s()[f.key];
+            strip.innerHTML = '';
+            arr.forEach(function (src, j) {
+              var t = h('div', { class: 'thumb' }, h('button', {
+                type: 'button',
+                'aria-label': 'Remove image ' + (j + 1),
+                text: '\u00d7',
+                onclick: function () {
+                  var next = s()[f.key].slice();
+                  next.splice(j, 1);
+                  set(f.key, next);
+                  paint();
+                }
+              }));
+              t.style.backgroundImage = 'url("' + src.replace(/"/g, '%22') + '")';
+              strip.append(t);
+            });
+            addAll.textContent = 'Add images (' + arr.length + '/' + f.maxCount + ')';
+            addAll.disabled = arr.length >= f.maxCount;
+          };
+
+          pickAll.addEventListener('change', function () {
+            var files = Array.prototype.slice.call(pickAll.files || []);
+            pickAll.value = '';
+            var room = f.maxCount - s()[f.key].length;
+            if (!files.length || room <= 0) return;
+            if (files.length > room) toast('Only ' + room + ' more image' + (room === 1 ? '' : 's') + ' fit.');
+            Promise.all(files.slice(0, room).map(function (file) {
+              return readImage(file, { max: 1600, square: false });
+            })).then(function (urls) {
+              set(f.key, s()[f.key].concat(urls));
+              paint();
+            }).catch(function (err) { toast(err.message); });
+          });
+
+          root.append(h('div', { class: 'lbl', text: f.label }), strip, h('div', { class: 'btn-row' }, addAll), pickAll);
+          sync = paint;
+
+        } else if (f.type === 'messages') {
+          var mlist = h('div', { class: 'posts' });
+          var mopen = { 0: true };
+          var mIdx = 0;
+          var mfile = h('input', { type: 'file', accept: 'image/*', hidden: true });
+
+          var mseg = function (opts, get, pick) {
+            var wrap = h('div', { class: 'seg', role: 'group' });
+            var paintSeg = function () {
+              Array.prototype.forEach.call(wrap.children, function (b) {
+                b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === get()));
+              });
+            };
+            opts.forEach(function (o) {
+              wrap.append(h('button', { type: 'button', 'data-v': o[0], text: o[1], onclick: function () { pick(o[0]); paintSeg(); } }));
+            });
+            paintSeg();
+            return wrap;
+          };
+
+          var mlabel = function (m, i) {
+            var snip = (m.text || (m.image ? 'Photo' : '')).replace(/\s+/g, ' ').slice(0, 22);
+            return (i + 1) + '. ' + (m.dir === 'out' ? 'Sent' : 'Received') + (snip ? ': ' + snip : '');
+          };
+
+          var mbuild = function () {
+            mlist.innerHTML = '';
+            var arr = s()[f.key];
+            arr.forEach(function (m, i) {
+              var upd = function () { set(f.key, arr); };
+              var title = h('span', { text: mlabel(m, i) });
+
+              var dirSeg = mseg([['in', 'Received'], ['out', 'Sent']], function () { return m.dir; }, function (v) {
+                m.dir = v;
+                title.textContent = mlabel(m, i);
+                upd();
+              });
+
+              var ta = h('textarea', { rows: 3, 'aria-label': 'Message ' + (i + 1) });
+              ta.value = m.text;
+              ta.addEventListener('input', function () {
+                m.text = ta.value;
+                title.textContent = mlabel(m, i);
+                upd();
+              });
+
+              var tickSeg = mseg([['none', 'None'], ['sent', 'Sent'], ['delivered', 'Delivered'], ['read', 'Read']], function () { return m.status; }, function (v) {
+                m.status = v;
+                upd();
+              });
+
+              var grid = h('div', { class: 'stat-grid' }, [
+                ['time', 'Time'], ['sender', 'Sender (groups)'], ['replyName', 'Reply to: name'],
+                ['replyText', 'Reply to: text'], ['reaction', 'Reaction emoji'], ['divider', 'Date label above']
+              ].map(function (pair) {
+                var inp = h('input', { type: 'text' });
+                inp.value = m[pair[0]];
+                inp.addEventListener('input', function () { m[pair[0]] = inp.value; upd(); });
+                return h('label', null, pair[1], inp);
+              }));
+
+              var pic = h('div', { class: 'thumbs' });
+              if (m.image) {
+                var t = h('div', { class: 'thumb' }, h('button', {
+                  type: 'button',
+                  'aria-label': 'Remove image',
+                  text: '\u00d7',
+                  onclick: function () { m.image = ''; upd(); mbuild(); }
+                }));
+                t.style.backgroundImage = 'url("' + m.image.replace(/"/g, '%22') + '")';
+                pic.append(t);
+              }
+
+              var move = function (by) {
+                var next = s()[f.key].slice();
+                var to = i + by;
+                if (to < 0 || to >= next.length) return;
+                next.splice(to, 0, next.splice(i, 1)[0]);
+                set(f.key, next);
+                mopen = {};
+                mopen[to] = true;
+                mbuild();
+              };
+
+              var tools = h('div', { class: 'btn-row' },
+                h('button', { type: 'button', class: 'btn', text: m.image ? 'Replace image' : 'Add image', onclick: function () { mIdx = i; mfile.click(); } }),
+                h('button', { type: 'button', class: 'btn', text: 'Move up', disabled: i === 0, onclick: function () { move(-1); } }),
+                h('button', { type: 'button', class: 'btn', text: 'Move down', disabled: i === arr.length - 1, onclick: function () { move(1); } })
+              );
+
+              var head = [title];
+              if (arr.length > 1) {
+                head.push(h('button', {
+                  type: 'button',
+                  class: 'post-rm',
+                  text: 'Remove',
+                  onclick: function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    set(f.key, arr.filter(function (_, k) { return k !== i; }));
+                    mopen = { 0: true };
+                    mbuild();
+                  }
+                }));
+              }
+
+              var det = h('details', { class: 'post-item', open: !!mopen[i] },
+                h('summary', null, head),
+                h('div', { class: 'post-item-body' }, dirSeg, ta, h('div', { class: 'lbl', text: 'Delivery ticks (sent messages)' }), tickSeg, grid, pic, tools)
+              );
+              det.addEventListener('toggle', function () { mopen[i] = det.open; });
+              mlist.append(det);
+            });
+          };
+
+          mfile.addEventListener('change', function () {
+            var picked = mfile.files && mfile.files[0];
+            mfile.value = '';
+            if (!picked) return;
+            readImage(picked, { max: 1200, square: false }).then(function (url) {
+              var arr = s()[f.key];
+              if (!arr[mIdx]) return;
+              arr[mIdx].image = url;
+              mopen[mIdx] = true;
+              set(f.key, arr);
+              mbuild();
+            }).catch(function (err) { toast(err.message); });
+          });
+
+          var addMsg = function (dir) {
+            var arr = s()[f.key].slice();
+            if (arr.length >= 30) { toast('Chats are limited to 30 messages here.'); return; }
+            var last = arr[arr.length - 1];
+            arr.push({ dir: dir, text: '', time: last ? last.time : '09:46', status: 'read', image: '', sender: '', replyName: '', replyText: '', reaction: '', divider: '' });
+            mopen = {};
+            mopen[arr.length - 1] = true;
+            set(f.key, arr);
+            mbuild();
+          };
+
+          root.append(
+            h('div', { class: 'lbl', text: f.label }),
+            mlist,
+            h('div', { class: 'btn-row' },
+              h('button', { type: 'button', class: 'btn', text: 'Add received', onclick: function () { addMsg('in'); } }),
+              h('button', { type: 'button', class: 'btn', text: 'Add sent', onclick: function () { addMsg('out'); } })
+            ),
+            mfile
+          );
+          sync = mbuild;
+
+        } else if (f.type === 'multi') {
+          var mchips = f.options.map(function (o) {
+            return h('button', {
+              type: 'button',
+              class: 'rx-chip',
+              'data-id': o[0],
+              text: o[1],
+              onclick: function () {
+                var list = s()[f.key].slice();
+                var at = list.indexOf(o[0]);
+                if (at > -1) { if (list.length > 1) list.splice(at, 1); }
+                else { list.push(o[0]); if (list.length > f.max) list.shift(); }
+                set(f.key, list);
+                syncAll();
+              }
+            });
+          });
+          root.append(h('div', { class: 'lbl', text: f.label }), h('div', { class: 'rx-picker' }, mchips));
+          sync = function () {
+            mchips.forEach(function (c) {
+              c.setAttribute('aria-pressed', String(s()[f.key].indexOf(c.getAttribute('data-id')) > -1));
+            });
+          };
+
+        } else if (f.type === 'swatches') {
+          var sws = BACKDROPS.map(function (b) {
+            var btn = h('button', {
+              type: 'button',
+              class: 'sw' + (b.cls ? ' ' + b.cls : ''),
+              title: b.label,
+              'aria-label': b.label,
+              'data-v': b.v,
+              onclick: function () { set(f.key, b.v); syncAll(); }
+            });
+            if (!b.cls) btn.style.background = b.v;
+            return btn;
+          });
+          var custom = h('input', { type: 'color', value: '#ff5a2c', 'aria-label': 'Custom backdrop color' });
+          custom.addEventListener('input', function () { set(f.key, custom.value); syncAll(); });
+          var customWrap = h('span', { class: 'sw sw--custom', title: 'Custom color' }, custom);
+          root.append(h('div', { class: 'lbl', text: f.label }), h('div', { class: 'swatches' }, sws, customWrap));
+          sync = function () {
+            var v = s()[f.key];
+            var known = false;
+            sws.forEach(function (b) {
+              var on = b.getAttribute('data-v') === v;
+              if (on) known = true;
+              b.setAttribute('aria-pressed', String(on));
+            });
+            customWrap.setAttribute('aria-pressed', String(!known));
+            if (!known && /^#[0-9a-f]{6}$/i.test(v)) custom.value = v;
+          };
+        }
+
+        syncers.push(sync);
+        if (f.showIf) visibles.push({ el: root, test: f.showIf });
+        return root;
+      }
+
+      function buildControls() {
+        var host = $('#controls');
+        host.innerHTML = '';
+        syncers = [];
+        visibles = [];
+        PLATFORMS[current].sections.forEach(function (sec) {
+          var body = h('div', { class: 'sec-body' }, sec.fields.map(buildField));
+          host.append(h('details', { class: 'sec', open: !!sec.open }, h('summary', { text: sec.title }), body));
+        });
+        syncAll();
+      }
+
+      function syncAll() {
+        syncers.forEach(function (fn) { fn(); });
+        applyVisibility();
+      }
+
+      function applyVisibility() {
+        visibles.forEach(function (v) { v.el.hidden = !v.test(state[current]); });
+      }
+
+      /* ======================================================
+         PREVIEW
+         ====================================================== */
+      var frame = $('#frame');
+      var card = $('#card');
+      var scaler = $('#scaler');
+      var fitBox = $('#fit');
+      var stage = $('#stage');
+
+      function renderPreview() {
+        var p = PLATFORMS[current];
+        var s = state[current];
+        card.innerHTML = p.render(s);
+        frame.style.padding = s.padding + 'px';
+        frame.style.background = s.backdrop === 'none' ? 'transparent' : s.backdrop;
+        frame.style.setProperty('--card-w', (p.widths || WIDTHS)[s.width] + 'px');
+        $('#chipTop').textContent = p.postName + ', ' + WIDTH_NAMES[s.width] + ' width';
+        fit();
+        queueSave();
+      }
+
+      function fit() {
+        var cs = getComputedStyle(stage);
+        var avail = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        var w = frame.offsetWidth;
+        var hgt = frame.offsetHeight;
+        if (!w) return;
+        var k = Math.min(1, avail / w);
+        scaler.style.transform = k < 1 ? 'scale(' + k + ')' : 'none';
+        fitBox.style.width = w * k + 'px';
+        fitBox.style.height = hgt * k + 'px';
+        var transparent = state[current].backdrop === 'none';
+        $('#chipBottom').textContent = 'PNG ' + (w * 2) + ' \u00d7 ' + (hgt * 2) + (transparent ? ', transparent' : '');
+      }
+
+      function settle() {
+        card.classList.remove('settle');
+        void card.offsetWidth;
+        card.classList.add('settle');
+      }
+
+      card.addEventListener('animationend', function () { card.classList.remove('settle'); });
+
+      if (window.ResizeObserver) {
+        var ro = new ResizeObserver(fit);
+        ro.observe(stage);
+        ro.observe(frame);
+      } else {
+        window.addEventListener('resize', fit);
+      }
+
+      /* images inside the card change its height after load */
+      card.addEventListener('load', fit, true);
+
+      /* ======================================================
+         EXPORT
+         ====================================================== */
+      function capture() {
+        if (!window.html2canvas) {
+          return Promise.reject(new Error('The export library did not load. Check your connection and reload.'));
+        }
+        var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+        return fontsReady.then(function () {
+          return window.html2canvas(frame, {
+            scale: 2,
+            backgroundColor: null,
+            useCORS: true,
+            logging: false,
+            onclone: function (doc) {
+              var sc = doc.getElementById('scaler');
+              var fb = doc.getElementById('fit');
+              var cd = doc.getElementById('card');
+              sc.style.transform = 'none';
+              fb.style.width = 'auto';
+              fb.style.height = 'auto';
+              cd.classList.remove('settle');
+            }
+          });
+        });
+      }
+
+      function fileName() {
+        return PLATFORMS[current].id + '-post.png';
+      }
+
+      function withBusy(btn, label, fn) {
+        var old = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = label;
+        return fn().then(function (msg) {
+          if (msg) toast(msg);
+        }).catch(function (err) {
+          toast(err.message || 'Export failed.');
+        }).then(function () {
+          btn.disabled = false;
+          btn.textContent = old;
+        });
+      }
+
+      $('#dlBtn').addEventListener('click', function () {
+        withBusy(this, 'Rendering', function () {
+          return capture().then(function (canvas) {
+            return new Promise(function (resolve, reject) {
+              canvas.toBlob(function (blob) {
+                if (!blob) return reject(new Error('Could not create the image.'));
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = fileName();
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+                resolve('Downloaded ' + fileName());
+              }, 'image/png');
+            });
+          });
+        });
+      });
+
+      $('#copyBtn').addEventListener('click', function () {
+        withBusy(this, 'Rendering', function () {
+          if (!navigator.clipboard || !window.ClipboardItem) {
+            return Promise.reject(new Error('This browser cannot copy images. Use Download PNG.'));
+          }
+          return capture().then(function (canvas) {
+            return new Promise(function (resolve, reject) {
+              canvas.toBlob(function (blob) {
+                if (!blob) return reject(new Error('Could not create the image.'));
+                navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function () {
+                  resolve('Image copied');
+                }).catch(function () {
+                  reject(new Error('Copy was blocked. Use Download PNG.'));
+                });
+              }, 'image/png');
+            });
+          });
+        });
+      });
+
+      /* ======================================================
+         CHROME: tabs, reset, app theme
+         ====================================================== */
+      function buildTabs() {
+        var nav = $('#tabs');
+        nav.innerHTML = '';
+        Object.keys(PLATFORMS).forEach(function (id) {
+          nav.append(h('button', {
+            type: 'button',
+            class: 'tab',
+            text: PLATFORMS[id].label,
+            'aria-current': String(id === current),
+            onclick: function () { switchTo(id); }
+          }));
+        });
+        UPCOMING.forEach(function (name) {
+          nav.append(h('button', { type: 'button', class: 'tab', disabled: true, title: 'Planned for a later build' }, name, h('small', { text: 'next' })));
+        });
+      }
+
+      function switchTo(id) {
+        current = id;
+        buildTabs();
+        buildControls();
+        renderPreview();
+        settle();
+      }
+
+      $('#resetBtn').addEventListener('click', function () {
+        state[current] = cloneDefaults(current);
+        syncAll();
+        renderPreview();
+        settle();
+        toast('Reset to the sample post');
+      });
+
+      var SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.900 4.900l1.400 1.400M17.700 17.700l1.400 1.400M4.900 19.100l1.400-1.400M17.700 6.300l1.400-1.400"/></svg>';
+      var MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M20 14.500A8 8 0 019.500 4 8 8 0 1020 14.500z"/></svg>';
+
+      function appIsDark() {
+        var t = document.documentElement.getAttribute('data-theme');
+        if (t) return t === 'dark';
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+
+      function paintThemeBtn() {
+        $('#themeBtn').innerHTML = appIsDark() ? SUN : MOON;
+      }
+
+      $('#themeBtn').addEventListener('click', function () {
+        var next = appIsDark() ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try { localStorage.setItem('postbench:app-theme', next); } catch (e) { /* ignore */ }
+        paintThemeBtn();
+      });
+
+      try {
+        var savedTheme = localStorage.getItem('postbench:app-theme');
+        if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+      } catch (e) { /* ignore */ }
+      paintThemeBtn();
+
+      /* ======================================================
+         BOOT
+         ====================================================== */
+      loadState();
+      switchTo(current);
+      window.addEventListener('load', fit);
+    })();
+  </script>
+</body>
+</html>
