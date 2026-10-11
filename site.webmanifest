@@ -1,0 +1,14 @@
+{
+  "name": "PostBench",
+  "short_name": "PostBench",
+  "description": "Social post simulator by COTworks",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#E4E8EE",
+  "theme_color": "#FF5A2C",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
