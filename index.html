@@ -56,21 +56,26 @@
   <style>
     /* ==========================================================
        TOKENS
-       Concept: a proofing bench. The post is the specimen,
-       the stage is the bench, the vermilion offset frame is
-       the proofreader's mark. Tool chrome stays quiet.
+       Concept: a proofing bench. The page is the paper desk, the
+       stage is a dark bench the specimen is laid on, and the
+       vermilion offset frame is the proofreader's mark.
+       Palette: cool grey desk, ink text, one vermilion accent.
        ========================================================== */
     :root {
-      --bg: #E4E8EE;
-      --panel: #F5F7FA;
+      color-scheme: light;
+
+      --bg: #E8EBF0;
+      --panel: #F6F7F9;
       --panel-2: #FFFFFF;
-      --ink: #11141B;
-      --ink-2: #596273;
-      --line: #CFD5DF;
+      --ink: #10131A;
+      --ink-2: #566072;
+      --line: #D3D9E2;
       --accent: #FF5A2C;
-      --accent-ink: #FFFFFF;
-      --dot: rgba(17, 20, 27, 0.16);
-      --grain-opacity: 0.06;
+      --accent-ink: #10131A;
+
+      --bench: #151922;
+      --bench-dot: rgba(255, 255, 255, 0.09);
+      --grain-opacity: 0.07;
 
       --r-s: 10px;
       --r-m: 20px;
@@ -83,43 +88,44 @@
       --sp-5: 24px;
       --sp-6: 32px;
 
-      --shadow-panel: 0 1px 2px rgba(17, 20, 27, 0.06), 0 8px 24px rgba(17, 20, 27, 0.08);
+      --shadow-panel: 0 1px 2px rgba(16, 19, 26, 0.05), 0 6px 16px rgba(16, 19, 26, 0.06), 0 24px 48px rgba(16, 19, 26, 0.08);
+      --shadow-float: 0 1px 2px rgba(16, 19, 26, 0.1), 0 8px 20px rgba(16, 19, 26, 0.14);
       --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
       --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
-    }
-
-    :root:not([data-theme="light"]) {
-      color-scheme: light;
     }
 
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
         color-scheme: dark;
-        --bg: #0E1116;
-        --panel: #171B23;
-        --panel-2: #1F242E;
-        --ink: #EEF1F6;
-        --ink-2: #9AA3B2;
-        --line: #2B323F;
+        --bg: #0B0E13;
+        --panel: #141922;
+        --panel-2: #1C222C;
+        --ink: #EDF0F5;
+        --ink-2: #97A1B2;
+        --line: #2A313C;
         --accent: #FF6B3F;
-        --dot: rgba(238, 241, 246, 0.14);
+        --bench: #07090D;
+        --bench-dot: rgba(255, 255, 255, 0.07);
         --grain-opacity: 0.09;
-        --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+        --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.35), 0 28px 56px rgba(0, 0, 0, 0.4);
+        --shadow-float: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(0, 0, 0, 0.5);
       }
     }
 
     :root[data-theme="dark"] {
       color-scheme: dark;
-      --bg: #0E1116;
-      --panel: #171B23;
-      --panel-2: #1F242E;
-      --ink: #EEF1F6;
-      --ink-2: #9AA3B2;
-      --line: #2B323F;
+      --bg: #0B0E13;
+      --panel: #141922;
+      --panel-2: #1C222C;
+      --ink: #EDF0F5;
+      --ink-2: #97A1B2;
+      --line: #2A313C;
       --accent: #FF6B3F;
-      --dot: rgba(238, 241, 246, 0.14);
+      --bench: #07090D;
+      --bench-dot: rgba(255, 255, 255, 0.07);
       --grain-opacity: 0.09;
-      --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+      --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.35), 0 28px 56px rgba(0, 0, 0, 0.4);
+      --shadow-float: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(0, 0, 0, 0.5);
     }
 
     /* ==========================================================
@@ -177,6 +183,8 @@
       align-items: center;
       gap: var(--sp-5);
       flex-wrap: wrap;
+      padding-bottom: var(--sp-4);
+      border-bottom: 1px solid var(--line);
     }
 
     .brand {
@@ -220,38 +228,54 @@
 
     .tabs {
       display: flex;
-      gap: var(--sp-2);
       flex-wrap: wrap;
+      gap: 2px;
       margin-left: auto;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
     }
 
     .tab {
-      border: 1px solid var(--line);
-      background: var(--panel);
+      border: 0;
       border-radius: var(--r-s);
-      padding: 8px 14px;
+      background: transparent;
+      padding: 7px 14px;
+      color: var(--ink-2);
       font-weight: 500;
       font-size: 14px;
       line-height: 1.2;
     }
 
+    .tab:hover {
+      color: var(--ink);
+    }
+
     .tab[aria-current="true"] {
       background: var(--ink);
-      border-color: var(--ink);
       color: var(--bg);
+    }
+
+    .tab[aria-current="true"]::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      vertical-align: 1px;
     }
 
     .tab:disabled {
       cursor: not-allowed;
-      border-style: dashed;
-      background: transparent;
-      color: var(--ink-2);
+      opacity: 0.6;
     }
 
     .tab small {
       margin-left: 6px;
       font-size: 12px;
-      opacity: 0.8;
     }
 
     .icon-btn {
@@ -264,28 +288,38 @@
       border-radius: var(--r-s);
     }
 
+    .icon-btn:hover {
+      border-color: var(--ink-2);
+    }
+
     .icon-btn svg {
       width: 18px;
       height: 18px;
     }
 
     .intro {
-      padding: var(--sp-6) 0 var(--sp-5);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--sp-3) var(--sp-5);
+      padding: var(--sp-5) 0 var(--sp-5);
     }
 
     .intro h1 {
       margin: 0;
       font-family: var(--font-display);
       font-weight: 800;
-      font-size: clamp(30px, 4.4vw, 52px);
-      line-height: 1;
-      letter-spacing: -0.035em;
+      font-size: clamp(28px, 3.4vw, 40px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
     }
 
     .intro p {
-      margin: var(--sp-3) 0 0;
+      margin: 0;
+      max-width: 42ch;
       color: var(--ink-2);
-      max-width: 52ch;
+      font-size: 15px;
     }
 
     /* ==========================================================
@@ -325,7 +359,8 @@
       margin: 0;
       font-family: var(--font-display);
       font-size: 18px;
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: -0.01em;
     }
 
     .link-btn {
@@ -357,7 +392,15 @@
       justify-content: space-between;
       padding: var(--sp-4) var(--sp-5);
       cursor: pointer;
+      font-family: var(--font-display);
+      font-size: 15px;
       font-weight: 600;
+      color: var(--ink-2);
+    }
+
+    .sec[open] > summary {
+      color: var(--ink);
+      padding-bottom: var(--sp-3);
     }
 
     .sec summary::-webkit-details-marker {
@@ -407,7 +450,9 @@
       border: 1px solid var(--line);
       border-radius: var(--r-s);
       padding: 10px 12px;
+      font-size: 15px;
       line-height: 1.4;
+      box-shadow: inset 0 1px 2px rgba(16, 19, 26, 0.05);
     }
 
     .field textarea {
@@ -443,9 +488,14 @@
       white-space: nowrap;
     }
 
+    .seg button:hover {
+      color: var(--ink);
+    }
+
     .seg button[aria-pressed="true"] {
       background: var(--ink);
       color: var(--bg);
+      box-shadow: 0 1px 2px rgba(16, 19, 26, 0.25);
     }
 
     .switch-row {
@@ -481,7 +531,7 @@
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: #fff;
+      background: #ffffff;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
       transition: transform 0.15s ease;
     }
@@ -526,7 +576,7 @@
     }
 
     .btn--primary:hover {
-      filter: brightness(1.06);
+      filter: brightness(1.05);
       border-color: var(--accent);
     }
 
@@ -636,19 +686,28 @@
 
     /* ==========================================================
        STAGE
-       Signature: offset outline frame behind the bench, with
-       two chips breaking across its edges.
+       Signature: a dark bench with an offset vermilion frame behind
+       it. The toolbar and the two chips float across its top and
+       bottom edges.
        ========================================================== */
     .stage-col {
       min-width: 0;
     }
 
     .bar {
+      position: relative;
+      z-index: 4;
       display: flex;
       justify-content: flex-end;
-      gap: var(--sp-2);
-      margin-bottom: var(--sp-5);
       flex-wrap: wrap;
+      gap: var(--sp-2);
+      margin: 0 28px -20px 0;
+    }
+
+    .bar .btn {
+      height: 40px;
+      padding: 0 18px;
+      box-shadow: var(--shadow-float);
     }
 
     .stage-wrap {
@@ -672,11 +731,12 @@
       min-height: 560px;
       padding: var(--sp-6);
       overflow: hidden;
-      border: 1px solid var(--line);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: var(--r-l);
-      background-color: var(--panel);
-      background-image: radial-gradient(var(--dot) 1px, transparent 1.4px);
+      background-color: var(--bench);
+      background-image: radial-gradient(var(--bench-dot) 1px, transparent 1.4px);
       background-size: 18px 18px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 -60px 90px rgba(0, 0, 0, 0.25);
     }
 
     .stage::after {
@@ -691,9 +751,11 @@
     .chip {
       position: absolute;
       z-index: 3;
-      background: var(--ink);
-      color: var(--bg);
+      background: var(--panel-2);
+      color: var(--ink);
+      border: 1px solid var(--line);
       border-radius: var(--r-s);
+      box-shadow: var(--shadow-float);
       padding: 4px 10px;
       font-size: 13px;
       font-weight: 500;
@@ -765,6 +827,16 @@
     .toast.on {
       opacity: 1;
       transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 960px) {
+      .bar {
+        margin: 0 0 var(--sp-4);
+      }
+
+      .intro {
+        padding: var(--sp-4) 0;
+      }
     }
 
     /* ==========================================================
@@ -1491,6 +1563,7 @@
     }
 
     .ig-badge svg {
+      fill: currentColor;
       width: 12px;
       height: 12px;
     }
@@ -2095,6 +2168,7 @@
     }
 
     .fb-badge svg {
+      fill: currentColor;
       width: 15px;
       height: 15px;
     }
@@ -2380,6 +2454,521 @@
     }
 
     /* ==========================================================
+       VIDEO LOOK (play button, length and controls drawn over marked photos)
+       ========================================================== */
+    .vrows {
+      display: grid;
+      gap: var(--sp-3);
+      margin-bottom: var(--sp-3);
+    }
+
+    .vnone {
+      font-size: 13px;
+      color: var(--ink-2);
+    }
+
+    .pb-vo {
+      position: absolute;
+      z-index: 2;
+      pointer-events: none;
+      overflow: hidden;
+      color: #ffffff;
+      font: 600 12px/16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .pb-play {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 56px;
+      height: 56px;
+      margin: -28px 0 0 -28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.55);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
+    }
+
+    .pb-play svg {
+      width: 26px;
+      height: 26px;
+      margin-left: 3px;
+      fill: #ffffff;
+    }
+
+    .pb-vo--sm .pb-play {
+      width: 36px;
+      height: 36px;
+      margin: -18px 0 0 -18px;
+    }
+
+    .pb-vo--sm .pb-play svg {
+      width: 16px;
+      height: 16px;
+      margin-left: 2px;
+    }
+
+    .pb-dur {
+      position: absolute;
+      left: 8px;
+      bottom: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .pb-dur svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .pb-mute {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    .pb-mute svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .pb-bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .pb-bar i {
+      display: block;
+      width: 32%;
+      height: 100%;
+      background: #ffffff;
+    }
+
+    .pb-vo--whatsapp .pb-dur {
+      bottom: 6px;
+      left: 6px;
+      background: none;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+    }
+
+    .pb-vo--instagram .pb-play {
+      display: none;
+    }
+
+    /* ==========================================================
+       YOUTUBE (platform-accurate: feed card and watch page, light and dark)
+       ========================================================== */
+    .yt {
+      --yt-bg: #ffffff;
+      --yt-text: #0f0f0f;
+      --yt-sub: #606060;
+      --yt-chip: #f2f2f2;
+      --yt-line: #e5e5e5;
+      --yt-blue: #065fd4;
+      --yt-ring: rgba(0, 0, 0, 0.08);
+
+      width: var(--card-w);
+      background: var(--yt-bg);
+      color: var(--yt-text);
+      border-radius: var(--yt-r, 12px);
+      overflow: hidden;
+      text-align: left;
+      font: 400 14px/20px Roboto, Arial, sans-serif;
+      box-shadow: 0 0 0 1px var(--yt-ring), 0 2px 4px rgba(10, 14, 25, 0.08), 0 14px 36px rgba(10, 14, 25, 0.16);
+    }
+
+    .yt--dark {
+      --yt-bg: #0f0f0f;
+      --yt-text: #f1f1f1;
+      --yt-sub: #aaaaaa;
+      --yt-chip: #272727;
+      --yt-line: #3f3f3f;
+      --yt-blue: #3ea6ff;
+      --yt-ring: rgba(255, 255, 255, 0.12);
+    }
+
+    .yt *,
+    .yt *::before,
+    .yt *::after {
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    .yt svg {
+      display: block;
+    }
+
+    .yt-card {
+      padding: 12px;
+    }
+
+    .yt-thumb {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border-radius: var(--yt-tr, 12px);
+      background: var(--yt-chip);
+    }
+
+    .yt-thumb img,
+    .yt-player > img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .yt-dur {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #ffffff;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 500;
+    }
+
+    .yt-prog {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .yt-prog i {
+      display: block;
+      height: 100%;
+      background: #ff0000;
+    }
+
+    .yt-info {
+      display: flex;
+      gap: 12px;
+      padding-top: 12px;
+    }
+
+    .yt-av {
+      width: 36px;
+      height: 36px;
+      flex: none;
+      display: block;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .yt-txt {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .yt-title {
+      font-size: 16px;
+      line-height: 22px;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+
+    .yt-ch {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0 4px;
+      color: var(--yt-sub);
+    }
+
+    .yt-ver {
+      display: inline-flex;
+      color: var(--yt-sub);
+    }
+
+    .yt-ver svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    .yt-kebab {
+      flex: none;
+      width: 24px;
+      height: 24px;
+      margin-top: -2px;
+    }
+
+    .yt-kebab svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .yt-player {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: #000000;
+    }
+
+    .yt-ctrl {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 28px 12px 8px;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+      color: #ffffff;
+    }
+
+    .yt-track {
+      position: relative;
+      height: 3px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .yt-track i {
+      display: block;
+      height: 100%;
+      background: #ff0000;
+    }
+
+    .yt-track b {
+      position: absolute;
+      top: -5px;
+      width: 13px;
+      height: 13px;
+      margin-left: -6px;
+      border-radius: 50%;
+      background: #ff0000;
+    }
+
+    .yt-crow {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      line-height: 20px;
+    }
+
+    .yt-crow svg {
+      width: 22px;
+      height: 22px;
+      fill: #ffffff;
+    }
+
+    .yt-sp {
+      flex: 1;
+    }
+
+    .yt-watch {
+      padding: 12px 16px 16px;
+    }
+
+    .yt-wtitle {
+      font-size: 20px;
+      line-height: 28px;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .yt-crow2 {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .yt-chn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 16px;
+      line-height: 20px;
+      font-weight: 500;
+    }
+
+    .yt-who {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .yt-subs {
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--yt-sub);
+    }
+
+    .yt-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 16px;
+      border-radius: 18px;
+      background: var(--yt-text);
+      color: var(--yt-bg);
+      font-weight: 500;
+    }
+
+    .yt-btn--on {
+      background: var(--yt-chip);
+      color: var(--yt-text);
+    }
+
+    .yt-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    .yt-pills {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .yt-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 14px;
+      border-radius: 18px;
+      background: var(--yt-chip);
+      font-weight: 500;
+    }
+
+    .yt-pill svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .yt-pill--split {
+      gap: 0;
+      padding: 0;
+    }
+
+    .yt-pill--split span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 14px;
+    }
+
+    .yt-pill--split i {
+      width: 1px;
+      height: 24px;
+      background: var(--yt-line);
+    }
+
+    .yt-down svg {
+      transform: rotate(180deg);
+    }
+
+    .yt-desc {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      background: var(--yt-chip);
+    }
+
+    .yt-dmeta {
+      font-weight: 600;
+    }
+
+    .yt-dtext {
+      margin-top: 4px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .yt-link {
+      color: var(--yt-blue);
+    }
+
+    .yt-more {
+      font-weight: 600;
+    }
+
+    .yt-cmh {
+      margin-top: 20px;
+      font-size: 16px;
+      line-height: 22px;
+    }
+
+    .yt-cm {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .yt-cm .yt-av {
+      width: 40px;
+      height: 40px;
+    }
+
+    .yt-cmu {
+      font-size: 13px;
+      line-height: 18px;
+    }
+
+    .yt-cmu span {
+      color: var(--yt-sub);
+    }
+
+    .yt-cmact {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--yt-sub);
+    }
+
+    .yt-cmact svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .yt-add {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      color: var(--yt-sub);
+    }
+
+    .yt-add .yt-av {
+      width: 40px;
+      height: 40px;
+    }
+
+    .yt-add span {
+      flex: 1;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--yt-line);
+    }
+
+    /* ==========================================================
        RESPONSIVE (continued)
        ========================================================== */
     @media (max-width: 960px) {
@@ -2553,6 +3142,11 @@
          IMAGE HELPERS
          ====================================================== */
       function readImage(file, opts) {
+        if (file.type.indexOf('video/') === 0) return readVideoFrame(file, opts);
+        return readImageOnly(file, opts);
+      }
+
+      function readImageOnly(file, opts) {
         return new Promise(function (resolve, reject) {
           var url = URL.createObjectURL(file);
           var img = new Image();
@@ -3745,6 +4339,385 @@
         }
       };
 
+      /* ======================================================
+         VIDEO LOOK: marker, overlays and per-platform media lists
+         A photo is "a video" when its data URL ends in #v.
+         ====================================================== */
+      var VIDEO = { len: '0:23' };
+      var videoRows = [];
+
+      function isVid(src) {
+        return typeof src === 'string' && /#v$/.test(src);
+      }
+
+      function setVid(src, on) {
+        var base = String(src).replace(/#v$/, '');
+        return on ? base + '#v' : base;
+      }
+
+      function clock(sec) {
+        sec = Math.max(0, Math.round(sec));
+        var hr = Math.floor(sec / 3600);
+        var mi = Math.floor((sec % 3600) / 60);
+        var se = sec % 60;
+        return (hr ? hr + ':' + (mi < 10 ? '0' : '') + mi : String(mi)) + ':' + (se < 10 ? '0' : '') + se;
+      }
+
+      function videoSection(id) {
+        if (!PLATFORMS[id].media) return [];
+        return [{
+          title: 'Video look',
+          fields: [{ key: 'videoLook', type: 'videolook', label: 'Show as video (play button and length)' }]
+        }];
+      }
+
+      function refreshVideoRows() {
+        videoRows = videoRows.filter(function (r) { return r.root.isConnected; });
+        videoRows.forEach(function (r) { r.paint(); });
+      }
+
+      var VI = {
+        play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
+        mute: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4zM17 9l4 6M21 9l-4 6"/></svg>',
+        vol: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4zM16.500 9a4 4 0 010 6M19 6.500a8 8 0 010 11"/></svg>',
+        cam: '<svg viewBox="0 0 24 24" fill="#fff"><rect x="2" y="6" width="13" height="12" rx="2"/><path d="M15 10l6-3v10l-6-3z"/></svg>'
+      };
+
+      function overlayHtml(platform, len) {
+        var play = '<span class="pb-play">' + VI.play + '</span>';
+        var dur = '<span class="pb-dur">' + esc(len) + '</span>';
+        if (platform === 'instagram') return '<span class="pb-bar"><i></i></span><span class="pb-mute">' + VI.mute + '</span>';
+        if (platform === 'whatsapp') return play + '<span class="pb-dur">' + VI.cam + esc(len) + '</span>';
+        if (platform === 'linkedin') return play + dur + '<span class="pb-bar"><i></i></span><span class="pb-mute">' + VI.vol + '</span>';
+        return play + dur;
+      }
+
+      function placeVideoOverlays() {
+        Array.prototype.forEach.call(card.querySelectorAll('.pb-vo'), function (n) { n.remove(); });
+        if (current === 'youtube') return;
+        Array.prototype.forEach.call(card.querySelectorAll('img'), function (img) {
+          if (!isVid(img.getAttribute('src') || '')) return;
+          var host = img.parentElement;
+          if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+          var w = img.offsetWidth;
+          var vo = document.createElement('div');
+          vo.className = 'pb-vo pb-vo--' + current + (w < 220 ? ' pb-vo--sm' : '');
+          vo.style.cssText = 'left:' + img.offsetLeft + 'px;top:' + img.offsetTop + 'px;width:' + w + 'px;height:' + img.offsetHeight + 'px';
+          vo.innerHTML = overlayHtml(current, VIDEO.len);
+          host.appendChild(vo);
+        });
+      }
+
+      /* Real video files: grab a frame and keep the video look */
+      function readVideoFrame(file, opts) {
+        return new Promise(function (resolve, reject) {
+          var url = URL.createObjectURL(file);
+          var v = document.createElement('video');
+          var done = false;
+          var timer;
+          var fail = function () {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            URL.revokeObjectURL(url);
+            reject(new Error('That video could not be read. Try an MP4 (H.264) file.'));
+          };
+          timer = setTimeout(fail, 12000);
+          v.muted = true;
+          v.preload = 'auto';
+          v.setAttribute('playsinline', '');
+          v.addEventListener('error', fail);
+          v.addEventListener('loadedmetadata', function () {
+            var dur = v.duration;
+            if (isFinite(dur) && !opts.square) VIDEO.len = clock(dur);
+            v.currentTime = isFinite(dur) ? Math.min(1, dur / 2) : 0;
+          });
+          v.addEventListener('seeked', function () {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            var sx = 0, sy = 0, sw = v.videoWidth, sh = v.videoHeight, dw, dh;
+            if (opts.square) {
+              var m = Math.min(sw, sh);
+              sx = (sw - m) / 2;
+              sy = (sh - m) / 2;
+              sw = sh = m;
+              dw = dh = Math.min(opts.max, m);
+            } else {
+              var k = Math.min(1, opts.max / sw);
+              dw = Math.round(sw * k);
+              dh = Math.round(sh * k);
+            }
+            var c = document.createElement('canvas');
+            c.width = dw;
+            c.height = dh;
+            c.getContext('2d').drawImage(v, sx, sy, sw, sh, 0, 0, dw, dh);
+            URL.revokeObjectURL(url);
+            resolve(c.toDataURL('image/jpeg', 0.9) + (opts.square ? '' : '#v'));
+          });
+          v.src = url;
+        });
+      }
+
+      PLATFORMS.linkedin.media = function () {
+        var st = state.linkedin;
+        return st.image ? [{ label: 'Post image', src: st.image, write: function (v) { set('image', v); } }] : [];
+      };
+
+      PLATFORMS.x.media = function () {
+        var out = [];
+        state.x.posts.forEach(function (p, i) {
+          p.images.forEach(function (src, j) {
+            out.push({
+              label: (i === 0 ? 'Main post' : 'Thread post ' + i) + ', photo ' + (j + 1),
+              src: src,
+              write: function (v) {
+                var posts = state.x.posts;
+                posts[i].images[j] = v;
+                set('posts', posts);
+              }
+            });
+          });
+        });
+        return out;
+      };
+
+      PLATFORMS.instagram.media = function () {
+        return state.instagram.images.map(function (src, j) {
+          return {
+            label: 'Photo ' + (j + 1),
+            src: src,
+            write: function (v) {
+              var a = state.instagram.images.slice();
+              a[j] = v;
+              set('images', a);
+            }
+          };
+        });
+      };
+
+      PLATFORMS.facebook.media = function () {
+        return state.facebook.images.map(function (src, j) {
+          return {
+            label: 'Photo ' + (j + 1),
+            src: src,
+            write: function (v) {
+              var a = state.facebook.images.slice();
+              a[j] = v;
+              set('images', a);
+            }
+          };
+        });
+      };
+
+      PLATFORMS.whatsapp.media = function () {
+        var out = [];
+        state.whatsapp.messages.forEach(function (m, i) {
+          if (!m.image) return;
+          out.push({
+            label: 'Message ' + (i + 1) + ' photo',
+            src: m.image,
+            write: function (v) {
+              var arr = state.whatsapp.messages;
+              arr[i].image = v;
+              set('messages', arr);
+            }
+          });
+        });
+        return out;
+      };
+
+      /* ======================================================
+         YOUTUBE: helpers, icons and platform entry
+         ====================================================== */
+      function ytSecs(t) {
+        var total = 0;
+        String(t).split(':').forEach(function (part) {
+          var n = parseInt(part, 10);
+          if (!isNaN(n)) total = total * 60 + n;
+        });
+        return total;
+      }
+
+      var YTI = {
+        kebab: '<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>',
+        play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
+        vol: '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.500 3A4.500 4.500 0 0014 8v8a4.500 4.500 0 002.500-4zM14 3.230v2.060a7 7 0 010 13.420v2.060a9 9 0 000-17.540z"/></svg>',
+        cc: '<svg viewBox="0 0 24 24"><path d="M19 4H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm-8 7H9.500v-.500h-2v3h2V13H11v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-4a1 1 0 011-1h3a1 1 0 011 1v1zm7 0h-1.500v-.500h-2v3h2V13H18v1a1 1 0 01-1 1h-3a1 1 0 01-1-1v-4a1 1 0 011-1h3a1 1 0 011 1v1z"/></svg>',
+        gear: '<svg viewBox="0 0 24 24"><path d="M19.430 12.980c.04-.32.07-.640.07-.980s-.03-.660-.07-.980l2.110-1.650a.5.5 0 00.120-.640l-2-3.460a.5.5 0 00-.610-.220l-2.490 1a7.300 7.300 0 00-1.690-.980l-.380-2.650A.490.490 0 0014 2h-4a.490.490 0 00-.490.420l-.380 2.650c-.61.250-1.170.590-1.690.980l-2.490-1a.490.490 0 00-.610.220l-2 3.460a.490.490 0 00.120.640l2.110 1.650c-.04.320-.07.650-.07.980s.03.660.07.980l-2.110 1.650a.5.5 0 00-.120.640l2 3.460c.12.220.39.300.610.220l2.490-1c.52.400 1.080.730 1.690.980l.380 2.650c.3.240.250.420.490.420h4c.25 0 .460-.180.490-.420l.380-2.650c.61-.250 1.170-.590 1.690-.980l2.490 1c.23.090.49 0 .610-.220l2-3.460a.5.5 0 00-.120-.640l-2.110-1.650zM12 15.500a3.500 3.500 0 110-7 3.500 3.500 0 010 7z"/></svg>',
+        fs: '<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>',
+        up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.700" stroke-linejoin="round" stroke-linecap="round"><path d="M7 11v9H4v-9h3zm0 0l4-8c1.600 0 2.600 1.100 2.300 2.600L12.700 9H19a2 2 0 011.900 2.600l-1.800 6.900A2 2 0 0117.200 20H7"/></svg>',
+        share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.700" stroke-linejoin="round" stroke-linecap="round"><path d="M14 5l7 7-7 7v-4c-6 0-9 2-11 6 1-7 4-12 11-13z"/></svg>',
+        bell: '<svg viewBox="0 0 24 24"><path d="M12 22a2 2 0 002-2h-4a2 2 0 002 2zm6-6v-5c0-3.070-1.630-5.640-4.500-6.320V4a1.500 1.500 0 00-3 0v.680C7.640 5.360 6 7.920 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>'
+      };
+
+      PLATFORMS.youtube = {
+        id: 'youtube',
+        label: 'YouTube',
+        postName: 'YouTube video',
+        widths: { mobile: 360, feed: 420, wide: 560 },
+
+        defaults: {
+          view: 'card',
+          thumbnail: SAMPLE_ART,
+          title: 'Slotwise 2.4 in 6 minutes: everything new',
+          duration: '6:12',
+          watched: 22,
+
+          channel: 'Slotwise',
+          avatar: '',
+          verified: true,
+          subscribers: '48.2K subscribers',
+          subscribed: false,
+
+          views: 182000,
+          age: '2 days ago',
+          likes: 5200,
+          comments: 214,
+          description: 'Slotwise 2.4 is out. In this video we walk through the new calendar view, the time zone fixes and the one setting we removed.\n\nChapters\n0:00 Intro\n1:12 Calendar view\n3:40 Time zones\n5:20 What we cut\n\n#slotwise #productdesign',
+          commentUser: 'tobiadeyemi',
+          commentText: 'The time zone fix alone is worth the update.',
+          commentAge: '1 day ago',
+          commentLikes: 48,
+
+          theme: 'light',
+          width: 'feed',
+          radius: 'standard',
+          backdrop: 'linear-gradient(135deg,#FF5A2C 0%,#FFC38A 100%)',
+          padding: 48
+        },
+
+        sections: [
+          {
+            title: 'Video',
+            open: true,
+            fields: [
+              { key: 'view', type: 'seg', label: 'View', options: [['card', 'Feed card'], ['watch', 'Watch page']] },
+              { key: 'thumbnail', type: 'image', label: 'Thumbnail (a video file works too)', max: 1600, sample: true },
+              { key: 'title', type: 'textarea', label: 'Title', rows: 2 },
+              { key: 'duration', type: 'text', label: 'Video length' },
+              { key: 'watched', type: 'range', label: 'Watched so far', min: 0, max: 100, step: 1, unit: '%' },
+              { key: 'views', type: 'number', label: 'Views' },
+              { key: 'age', type: 'text', label: 'Uploaded' }
+            ]
+          },
+          {
+            title: 'Channel',
+            open: true,
+            fields: [
+              { key: 'channel', type: 'text', label: 'Channel name' },
+              { key: 'avatar', type: 'image', label: 'Channel photo', max: 320, square: true },
+              { key: 'verified', type: 'toggle', label: 'Verified check' },
+              { key: 'subscribers', type: 'text', label: 'Subscriber line', showIf: function (s) { return s.view === 'watch'; } },
+              { key: 'subscribed', type: 'toggle', label: 'Show as subscribed', showIf: function (s) { return s.view === 'watch'; } }
+            ]
+          },
+          {
+            title: 'Watch page details',
+            fields: [
+              { key: 'likes', type: 'number', label: 'Likes', showIf: function (s) { return s.view === 'watch'; } },
+              { key: 'description', type: 'textarea', label: 'Description', rows: 6, showIf: function (s) { return s.view === 'watch'; } },
+              { key: 'comments', type: 'number', label: 'Comment count', showIf: function (s) { return s.view === 'watch'; } },
+              { key: 'commentUser', type: 'text', label: 'Top comment: username', showIf: function (s) { return s.view === 'watch'; } },
+              { key: 'commentText', type: 'textarea', label: 'Top comment: text', rows: 2, showIf: function (s) { return s.view === 'watch'; } },
+              { key: 'commentAge', type: 'text', label: 'Top comment: age', showIf: function (s) { return s.view === 'watch'; } },
+              { key: 'commentLikes', type: 'number', label: 'Top comment: likes', showIf: function (s) { return s.view === 'watch'; } }
+            ]
+          },
+          {
+            title: 'Styling',
+            fields: [
+              { key: 'theme', type: 'seg', label: 'Theme', options: [['light', 'Light'], ['dark', 'Dark']] },
+              { key: 'width', type: 'seg', label: 'Width', options: [['mobile', 'Mobile'], ['feed', 'Feed'], ['wide', 'Wide']] },
+              { key: 'radius', type: 'seg', label: 'Corners', options: [['sharp', 'Sharp'], ['standard', 'Standard'], ['round', 'Round']] },
+              { key: 'backdrop', type: 'swatches', label: 'Backdrop' },
+              { key: 'padding', type: 'range', label: 'Backdrop padding', min: 0, max: 120, step: 4, unit: 'px' }
+            ]
+          }
+        ],
+
+        render: function (s) {
+          var watch = s.view === 'watch';
+          var W = (watch ? { mobile: 390, feed: 640, wide: 854 } : { mobile: 360, feed: 420, wide: 560 })[s.width];
+          var radius = { sharp: 0, standard: 12, round: 20 }[s.radius];
+          var thumbRadius = { sharp: 0, standard: 12, round: 16 }[s.radius];
+          var avatar = s.avatar || initialsAvatar(s.channel || 'Channel');
+          var badge = s.verified ? '<span class="yt-ver">' + XI.badge + '</span>' : '';
+          var vw = clampInt(s.views);
+          var viewsTxt = compact(vw) + (vw === 1 ? ' view' : ' views');
+          var pct = Math.min(100, Math.max(0, clampInt(s.watched)));
+          var thumb = s.thumbnail ? '<img src="' + esc(s.thumbnail) + '" alt="">' : '';
+          var open = '<article class="yt yt--' + s.theme + '" style="width:' + W + 'px;--yt-r:' + radius + 'px;--yt-tr:' + thumbRadius + 'px">';
+
+          /* feed card */
+          if (!watch) {
+            return open +
+              '<div class="yt-card">' +
+                '<div class="yt-thumb">' + thumb +
+                  (s.duration ? '<span class="yt-dur">' + esc(s.duration) + '</span>' : '') +
+                  (pct > 0 ? '<span class="yt-prog"><i style="width:' + pct + '%"></i></span>' : '') +
+                '</div>' +
+                '<div class="yt-info">' +
+                  '<img class="yt-av" src="' + esc(avatar) + '" alt="">' +
+                  '<div class="yt-txt">' +
+                    '<div class="yt-title">' + esc(s.title) + '</div>' +
+                    '<div class="yt-ch"><span>' + esc(s.channel) + '</span>' + badge + '</div>' +
+                    '<div class="yt-ch">' + viewsTxt + (s.age ? ' \u2022 ' + esc(s.age) : '') + '</div>' +
+                  '</div>' +
+                  '<span class="yt-kebab">' + YTI.kebab + '</span>' +
+                '</div>' +
+              '</div></article>';
+          }
+
+          /* watch page */
+          var now = clock(ytSecs(s.duration) * pct / 100);
+          var player =
+            '<div class="yt-player">' + thumb +
+              '<div class="yt-ctrl">' +
+                '<div class="yt-track"><i style="width:' + pct + '%"></i><b style="left:' + pct + '%"></b></div>' +
+                '<div class="yt-crow">' + YTI.play + YTI.vol + '<span>' + now + ' / ' + esc(s.duration) + '</span><span class="yt-sp"></span>' + YTI.cc + YTI.gear + YTI.fs + '</div>' +
+              '</div>' +
+            '</div>';
+
+          var lines = s.description.split('\n');
+          var cut = lines.length > 3;
+          var shownDesc = formatText(lines.slice(0, 3).join('\n'), 'yt-link') + (cut ? '\u2026 <span class="yt-more">more</span>' : '');
+          var desc = s.description.trim()
+            ? '<div class="yt-desc"><div class="yt-dmeta">' + viewsTxt + (s.age ? '  ' + esc(s.age) : '') + '</div><div class="yt-dtext">' + shownDesc + '</div></div>'
+            : '';
+
+          var cc = clampInt(s.comments);
+          var cmHead = cc > 0 ? '<div class="yt-cmh"><b>' + fullNum(cc) + '</b> Comments</div>' : '';
+          var user = String(s.commentUser).replace(/^@+/, '');
+          var cm = s.commentText.trim()
+            ? '<div class="yt-cm"><img class="yt-av" src="' + esc(initialsAvatar(user || 'User')) + '" alt="">' +
+              '<div><div class="yt-cmu"><b>@' + esc(user) + '</b> <span>' + esc(s.commentAge) + '</span></div>' +
+              '<div>' + esc(s.commentText) + '</div>' +
+              '<div class="yt-cmact">' + YTI.up + (clampInt(s.commentLikes) > 0 ? '<span>' + compact(s.commentLikes) + '</span>' : '') + '<span class="yt-down">' + YTI.up + '</span></div></div></div>'
+            : '';
+          var add = '<div class="yt-add"><img class="yt-av" src="' + esc(avatar) + '" alt=""><span>Add a comment\u2026</span></div>';
+
+          return open +
+            player +
+            '<div class="yt-watch">' +
+              '<div class="yt-wtitle">' + esc(s.title) + '</div>' +
+              '<div class="yt-crow2">' +
+                '<img class="yt-av" style="width:40px;height:40px" src="' + esc(avatar) + '" alt="">' +
+                '<div class="yt-who"><div class="yt-chn"><span>' + esc(s.channel) + '</span>' + badge + '</div>' +
+                (s.subscribers ? '<div class="yt-subs">' + esc(s.subscribers) + '</div>' : '') + '</div>' +
+                (s.subscribed
+                  ? '<span class="yt-btn yt-btn--on">' + YTI.bell + 'Subscribed</span>'
+                  : '<span class="yt-btn">Subscribe</span>') +
+              '</div>' +
+              '<div class="yt-pills">' +
+                '<span class="yt-pill yt-pill--split"><span>' + YTI.up + compact(s.likes) + '</span><i></i><span class="yt-down">' + YTI.up + '</span></span>' +
+                '<span class="yt-pill">' + YTI.share + 'Share</span>' +
+              '</div>' +
+              desc + cmHead + cm + add +
+            '</div></article>';
+        }
+      };
+
       /* Platforms still to build. Shown disabled in the tab strip. */
       var UPCOMING = [];
 
@@ -3842,7 +4815,7 @@
           sync = function () { rng.value = s()[f.key]; out.textContent = rng.value + f.unit; };
 
         } else if (f.type === 'image') {
-          var file = h('input', { type: 'file', accept: 'image/*', hidden: true });
+          var file = h('input', { type: 'file', accept: 'image/*,video/*', hidden: true });
           var thumb = h('div', { class: 'img-thumb', 'aria-hidden': 'true' });
           var buttons = [
             h('button', { type: 'button', class: 'btn', text: 'Upload', onclick: function () { file.click(); } }),
@@ -3893,7 +4866,7 @@
           var list = h('div', { class: 'posts' });
           var open = { 0: true };
           var pickIdx = 0;
-          var pick = h('input', { type: 'file', accept: 'image/*', multiple: true, hidden: true });
+          var pick = h('input', { type: 'file', accept: 'image/*,video/*', multiple: true, hidden: true });
 
           var rebuild = function () {
             list.innerHTML = '';
@@ -4001,7 +4974,7 @@
 
         } else if (f.type === 'images') {
           var strip = h('div', { class: 'thumbs' });
-          var pickAll = h('input', { type: 'file', accept: 'image/*', multiple: true, hidden: true });
+          var pickAll = h('input', { type: 'file', accept: 'image/*,video/*', multiple: true, hidden: true });
           var addAll = h('button', { type: 'button', class: 'btn', onclick: function () { pickAll.click(); } });
 
           var paint = function () {
@@ -4047,7 +5020,7 @@
           var mlist = h('div', { class: 'posts' });
           var mopen = { 0: true };
           var mIdx = 0;
-          var mfile = h('input', { type: 'file', accept: 'image/*', hidden: true });
+          var mfile = h('input', { type: 'file', accept: 'image/*,video/*', hidden: true });
 
           var mseg = function (opts, get, pick) {
             var wrap = h('div', { class: 'seg', role: 'group' });
@@ -4218,6 +5191,48 @@
             });
           };
 
+        } else if (f.type === 'videolook') {
+          var vrows = h('div', { class: 'vrows' });
+          var lenInp = h('input', { type: 'text', 'aria-label': 'Video length' });
+          lenInp.value = VIDEO.len;
+          lenInp.addEventListener('input', function () {
+            VIDEO.len = lenInp.value;
+            renderPreview();
+          });
+
+          var vpaint = function () {
+            var items = PLATFORMS[current].media ? PLATFORMS[current].media() : [];
+            var sig = items.map(function (it) { return it.label; }).join('|');
+            if (vrows.getAttribute('data-sig') === sig && items.length) {
+              Array.prototype.forEach.call(vrows.querySelectorAll('input'), function (cb, i) {
+                cb.checked = isVid(items[i].src);
+              });
+            } else {
+              vrows.setAttribute('data-sig', sig);
+              vrows.innerHTML = '';
+              if (!items.length) vrows.append(h('div', { class: 'vnone', text: 'Add a photo first.' }));
+              items.forEach(function (it, idx) {
+                var cb = h('input', { type: 'checkbox', role: 'switch' });
+                cb.checked = isVid(it.src);
+                cb.addEventListener('change', function () {
+                  var now = PLATFORMS[current].media()[idx];
+                  if (now) now.write(setVid(now.src, cb.checked));
+                });
+                vrows.append(h('label', { class: 'switch-row' }, h('span', { text: it.label }), cb, h('span', { class: 'switch' })));
+              });
+            }
+            if (document.activeElement !== lenInp) lenInp.value = VIDEO.len;
+          };
+
+          root.append(
+            h('div', { class: 'lbl', text: f.label }),
+            vrows,
+            h('div', { class: 'lbl', text: 'Video length' }),
+            lenInp
+          );
+          videoRows.push({ root: root, paint: vpaint });
+          sync = vpaint;
+
         } else if (f.type === 'swatches') {
           var sws = BACKDROPS.map(function (b) {
             var btn = h('button', {
@@ -4258,7 +5273,7 @@
         host.innerHTML = '';
         syncers = [];
         visibles = [];
-        PLATFORMS[current].sections.forEach(function (sec) {
+        PLATFORMS[current].sections.concat(videoSection(current)).forEach(function (sec) {
           var body = h('div', { class: 'sec-body' }, sec.fields.map(buildField));
           host.append(h('details', { class: 'sec', open: !!sec.open }, h('summary', { text: sec.title }), body));
         });
@@ -4287,6 +5302,8 @@
         var p = PLATFORMS[current];
         var s = state[current];
         card.innerHTML = p.render(s);
+        placeVideoOverlays();
+        refreshVideoRows();
         frame.style.padding = s.padding + 'px';
         frame.style.background = s.backdrop === 'none' ? 'transparent' : s.backdrop;
         frame.style.setProperty('--card-w', (p.widths || WIDTHS)[s.width] + 'px');
@@ -4326,7 +5343,10 @@
       }
 
       /* images inside the card change its height after load */
-      card.addEventListener('load', fit, true);
+      card.addEventListener('load', function () {
+        placeVideoOverlays();
+        fit();
+      }, true);
 
       /* ======================================================
          EXPORT
